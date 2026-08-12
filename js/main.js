@@ -12,8 +12,10 @@ import {
 } from './view/draw.js';
 import { syncUI, drawOverlay, drawQuiz } from './view/hud.js';
 
-// ── Touch-device detection — mobile UI only shows on touch devices ──────────────
-const IS_TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+// ── Touch-device detection — mobile UI only shows on touch-primary devices ──────
+// (pointer: coarse) reflects the PRIMARY pointer, so touchscreen laptops with a
+// mouse/trackpad stay on the desktop (keyboard) experience — no joystick shown.
+const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches;
 if (IS_TOUCH) document.body.classList.add('is-touch');
 
 // ── Responsive scaling ─────────────────────────────────────────────────────────

@@ -62,8 +62,11 @@ export function drawPlatform(p) {
     }
     ctx.fillStyle = '#222';
     for (let k = 0; k < p.w; k += kw) {
+      const bx = px + k + kw * 0.55;
+      // Skip black keys that would spill past the platform's right edge.
+      if (bx + bkw > px + p.w) continue;
       if ((Math.floor(k / kw) % 7) !== 2 && (Math.floor(k / kw) % 7) !== 6)
-        ctx.fillRect(px + k + kw * 0.55, p.y, bkw, bkh);
+        ctx.fillRect(bx, p.y, bkw, bkh);
     }
     ctx.strokeStyle = '#999'; ctx.lineWidth = 1; ctx.strokeRect(px, p.y, p.w, p.h);
   }

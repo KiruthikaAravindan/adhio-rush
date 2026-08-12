@@ -68,12 +68,26 @@ export const QUIZ_QUESTIONS = [
   { q: 'A group of 8 notes spanning an octave?', choices: ['Scale',        'Chord',       'Arpeggio'    ], answer: 0 },
 ];
 
+// Each prize box is anchored just above a "host" piano-key platform so the
+// player can stand on that platform and jump up to hit it. Centered on the
+// platform and placed ~52px above its top → within a single jump's reach.
+const BOX = 18;                    // box is same height as a piano platform (h:18)
+const BOX_GAP = 52;                // clearance from platform top to box bottom
+function boxAbove(hostIndex, qi) {
+  const p = platforms[hostIndex];
+  return {
+    x: Math.round(p.x + p.w / 2 - BOX / 2),
+    y: p.y - BOX_GAP - BOX,
+    w: BOX, h: BOX,
+    hit: false, qi,
+  };
+}
 export const prizeBoxes = [
-  { x: 480,  y: 240, w: 20, h: 20, hit: false, qi: 0 },
-  { x: 990,  y: 240, w: 20, h: 20, hit: false, qi: 1 },
-  { x: 1560, y: 240, w: 20, h: 20, hit: false, qi: 2 },
-  { x: 2190, y: 240, w: 20, h: 20, hit: false, qi: 3 },
-  { x: 2870, y: 240, w: 20, h: 20, hit: false, qi: 4 },
+  boxAbove(6,  0),   // above platform [380,245,w100]
+  boxAbove(9,  1),   // above platform [900,245,w90]
+  boxAbove(12, 2),   // above platform [1410,265,w120]
+  boxAbove(15, 3),   // above platform [2100,245,w110]
+  boxAbove(18, 4),   // above platform [2810,245,w90]
 ];
 
 export const pigeons = [];
