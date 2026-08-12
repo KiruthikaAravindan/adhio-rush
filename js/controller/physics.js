@@ -49,6 +49,7 @@ export function resetGame() {
   gameState.coinCount    = 0;
   gameState.gameOver     = false;
   gameState.gameWon      = false;
+  gameState.girlState    = 'idle';
   gameState.levelComplete = false;
   gameState.currentLevel = 1;
   gameState.worldW       = 3200;
@@ -63,6 +64,7 @@ export function resetGame() {
 
 export function nextLevel() {
   gameState.levelComplete = false;
+  gameState.girlState     = 'idle';
   gameState.currentLevel  = 2;
   gameState.worldW        = 4700;
   gameState.restartHeld   = false;

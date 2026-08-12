@@ -189,12 +189,22 @@ export function update() {
   // ── Camera ────────────────────────────────────────────────────────────────────
   gameState.cameraX = Math.max(0, Math.min(player.x - CANVAS_W / 3, gameState.worldW - CANVAS_W));
 
+  // ── Girl proximity transitions ────────────────────────────────────────────────
+  if (gameState.girlState === 'idle' && player.x > gameState.worldW - 380) {
+    gameState.girlState = 'cheer';
+  }
+
   // ── Win / level complete ──────────────────────────────────────────────────────
   if (player.x > gameState.worldW - 130) {
-    if (gameState.currentLevel === 1) {
+    gameState.girlState = 'hearts';
+    if (gameState.currentLevel === 1 && !gameState.levelComplete) {
+      burst(gameState.worldW - 96, 360, '#ff66cc', 16);
+      burst(gameState.worldW - 96, 360, '#FFD700', 12);
       gameState.levelComplete = true;
       SFX.levelComplete();
-    } else if (!gameState.gameWon) {
+    } else if (gameState.currentLevel === 2 && !gameState.gameWon) {
+      burst(gameState.worldW - 96, 360, '#ff66cc', 16);
+      burst(gameState.worldW - 96, 360, '#FFD700', 12);
       gameState.gameWon = true;
       SFX.win();
     }

@@ -155,35 +155,72 @@ export function drawPigeon(pg) {
 
 export function drawPlayer() {
   if (player.invincible > 0 && Math.floor(player.invincible / 5) % 2 === 0) return;
-  const px = player.x - gameState.cameraX, py = player.y;
-  ctx.save();
-  if (player.facing === -1) { ctx.translate(px + player.w, py); ctx.scale(-1, 1); }
-  else ctx.translate(px, py);
+
+  const DW = 60, DH = 40;
+  const px = player.x - gameState.cameraX + (player.w - DW) / 2;
+  const py = player.y + player.h - DH;
 
   if (media.playerImage) {
-    ctx.drawImage(media.playerImage, 0, 0, player.w, player.h);
-  } else {
-    const lo = player.onGround ? (player.walkFrame === 0 ? 2 : -2) : 0;
-    ctx.fillStyle = '#3a1800';
-    ctx.fillRect(0+lo, 34, 13, 8); ctx.fillRect(19-lo, 34, 13, 8);
-    ctx.fillStyle = '#1a5fe0'; ctx.fillRect(4, 20, 24, 20);
-    ctx.fillStyle = '#e63c00'; ctx.fillRect(4, 20, 24, 12);
-    ctx.fillStyle = '#fcc09a'; ctx.fillRect(8, 6, 18, 14);
-    ctx.fillStyle = '#e63c00'; ctx.fillRect(2, 7, 28, 4); ctx.fillRect(6, 0, 22, 9);
-    ctx.fillStyle = '#000';    ctx.fillRect(11, 9, 3, 4); ctx.fillRect(20, 9, 3, 4);
-    ctx.fillStyle = '#5a3000'; ctx.fillRect(9, 15, 16, 3);
-    ctx.fillStyle = '#FFD700'; ctx.fillRect(13, 22, 4, 4);
+    let col, row;
+    if (!player.onGround) {
+      col = 1; row = 1; // jump
+    } else if (player.vx < -0.5) {
+      col = 0; row = 0; // walk left
+    } else if (player.vx > 0.5) {
+      col = 1; row = 0; // walk right
+    } else {
+      col = 0; row = 1; // idle
+    }
+    ctx.drawImage(media.playerImage, col * 768, row * 512, 768, 512, px, py, DW, DH);
+    return;
   }
+
+  // Fallback hand-drawn character
+  const bpx = player.x - gameState.cameraX;
+  ctx.save();
+  if (player.facing === -1) { ctx.translate(bpx + player.w, player.y); ctx.scale(-1, 1); }
+  else ctx.translate(bpx, player.y);
+  const lo = player.onGround ? (player.walkFrame === 0 ? 2 : -2) : 0;
+  ctx.fillStyle = '#3a1800';
+  ctx.fillRect(0+lo, 34, 13, 8); ctx.fillRect(19-lo, 34, 13, 8);
+  ctx.fillStyle = '#1a5fe0'; ctx.fillRect(4, 20, 24, 20);
+  ctx.fillStyle = '#e63c00'; ctx.fillRect(4, 20, 24, 12);
+  ctx.fillStyle = '#fcc09a'; ctx.fillRect(8, 6, 18, 14);
+  ctx.fillStyle = '#e63c00'; ctx.fillRect(2, 7, 28, 4); ctx.fillRect(6, 0, 22, 9);
+  ctx.fillStyle = '#000';    ctx.fillRect(11, 9, 3, 4); ctx.fillRect(20, 9, 3, 4);
+  ctx.fillStyle = '#5a3000'; ctx.fillRect(9, 15, 16, 3);
+  ctx.fillStyle = '#FFD700'; ctx.fillRect(13, 22, 4, 4);
   ctx.restore();
 }
 
-export function drawFlag() {
-  const fx = gameState.worldW - 96 - gameState.cameraX;
-  if (fx < -60 || fx > CANVAS_W + 10) return;
-  ctx.fillStyle = '#aaa'; ctx.fillRect(fx, 200, 6, 200);
-  ctx.fillStyle = '#e63c00';
-  ctx.beginPath(); ctx.moveTo(fx+6,202); ctx.lineTo(fx+50,222); ctx.lineTo(fx+6,242); ctx.closePath(); ctx.fill();
-  ctx.fillStyle = '#888'; ctx.fillRect(fx-10, 396, 26, 8);
+export function drawGirl() {
+  const gxWorld = gameState.worldW - 96;
+  const gx = gxWorld - gameState.cameraX;
+  if (gx < -80 || gx > CANVAS_W + 10) return;
+
+  const DW = 52, DH = 78;
+  const py = 400 - DH;
+
+  if (!media.girlImage) {
+    // Fallback flag
+    ctx.fillStyle = '#aaa'; ctx.fillRect(gx, 200, 6, 200);
+    ctx.fillStyle = '#e63c00';
+    ctx.beginPath(); ctx.moveTo(gx+6,202); ctx.lineTo(gx+50,222); ctx.lineTo(gx+6,242); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#888'; ctx.fillRect(gx-10, 396, 26, 8);
+    return;
+  }
+
+  const FW = 418, FH = 627;
+  let col, row;
+  const s = gameState.girlState;
+  if (s === 'hearts') {
+    col = 2; row = 1;
+  } else if (s === 'cheer') {
+    col = Math.floor(Date.now() / 220) % 2; row = 1;
+  } else {
+    col = 0; row = 0;
+  }
+  ctx.drawImage(media.girlImage, col * FW, row * FH, FW, FH, gx - DW / 2, py, DW, DH);
 }
 
 export function drawParticles() {

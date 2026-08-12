@@ -12,7 +12,8 @@ export const gameState = {
   gameWon: false,
   levelComplete: false,
   currentLevel: 1,
-  worldW: 3200,          // updated per level
+  worldW: 3200,
+  girlState: 'idle',   // 'idle' | 'cheer' | 'hearts'
   cameraX: 0,
   restartHeld: false,
   jumpDown: false,
@@ -58,7 +59,7 @@ export const player = {
 
 export const particles = [];
 
-export const media = { playerImage: null };
+export const media = { playerImage: null, girlImage: null };
 
 export function burst(x, y, color, n = 8) {
   for (let i = 0; i < n; i++) {

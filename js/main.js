@@ -1,14 +1,14 @@
 import { canvas, ctx } from './canvas.js';
 import { CANVAS_W, CANVAS_H } from './constants.js';
 import { resumeAudio, startBgMusic, setBgMusicMuted } from './audio.js';
-import { gameState } from './model/state.js';
+import { gameState, media } from './model/state.js';
 import { platforms, coins, enemies, prizeBoxes, pigeons } from './model/level.js';
 import './controller/input.js';
 import { resetGame, nextLevel } from './controller/physics.js';
 import { update } from './controller/update.js';
 import {
   drawBg, drawPlatform, drawNote, drawEnemy, drawPigeon,
-  drawPrizeBox, drawPlayer, drawFlag, drawParticles,
+  drawPrizeBox, drawPlayer, drawGirl, drawParticles,
 } from './view/draw.js';
 import { syncUI, drawOverlay, drawLevelComplete, drawQuiz } from './view/hud.js';
 
@@ -33,6 +33,17 @@ window.addEventListener('orientationchange', () => setTimeout(resizeGame, 120));
 document.addEventListener('fullscreenchange',       () => setTimeout(resizeGame, 120));
 document.addEventListener('webkitfullscreenchange', () => setTimeout(resizeGame, 120));
 resizeGame();
+
+// ── Sprite loading ─────────────────────────────────────────────────────────────
+(function loadSprites() {
+  const boy = new Image();
+  boy.onload = () => { media.playerImage = boy; };
+  boy.src = 'resources/boy.png';
+
+  const girl = new Image();
+  girl.onload = () => { media.girlImage = girl; };
+  girl.src = 'resources/girl.png';
+})();
 
 // ── Fullscreen ─────────────────────────────────────────────────────────────────
 function fsElement() { return document.fullscreenElement || document.webkitFullscreenElement; }
@@ -109,7 +120,7 @@ function loop() {
   ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
   drawBg();
   platforms.forEach(drawPlatform);
-  drawFlag();
+  drawGirl();
   coins.forEach(drawNote);
   prizeBoxes.forEach(drawPrizeBox);
   enemies.forEach(e => { if (e.alive) drawEnemy(e); });
