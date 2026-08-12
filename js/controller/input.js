@@ -31,51 +31,56 @@ window.addEventListener('keyup',   handleKeyUp,   { capture: true });
 window.addEventListener('blur', clearKeys);
 document.addEventListener('visibilitychange', () => { if (document.hidden) clearKeys(); });
 
-// ── IME bypass ────────────────────────────────────────────────────────────────
-// Windows IME intercepts character keys (e.code='', e.keyCode=229).
-// A hidden <input> captures the IME 'input' event and maps e.data → game key.
-const imeEl = document.createElement('input');
-Object.assign(imeEl.style, {
-  position: 'fixed', top: '0', left: '0',
-  width: '1px', height: '1px',
-  opacity: '0', pointerEvents: 'none',
-});
-['autocomplete', 'autocorrect', 'autocapitalize', 'spellcheck']
-  .forEach(a => imeEl.setAttribute(a, 'off'));
-document.body.appendChild(imeEl);
+// ── IME bypass (desktop Windows only) ──────────────────────────────────────────
+// Windows IME intercepts character keys (e.code='', e.keyCode=229). A hidden
+// <input> captures the IME 'input' event and maps e.data → game key.
+// This must NOT run on touch devices: focusing an <input> opens the soft keyboard.
+const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches;
 
-const IME_MAP = { ' ': 'Space', 'a': 'KeyA', 'd': 'KeyD', 'w': 'KeyW', 's': 'KeyS', 'r': 'KeyR' };
-const imeQueue = [];
+if (!IS_TOUCH) {
+  const imeEl = document.createElement('input');
+  Object.assign(imeEl.style, {
+    position: 'fixed', top: '0', left: '0',
+    width: '1px', height: '1px',
+    opacity: '0', pointerEvents: 'none',
+  });
+  ['autocomplete', 'autocorrect', 'autocapitalize', 'spellcheck']
+    .forEach(a => imeEl.setAttribute(a, 'off'));
+  document.body.appendChild(imeEl);
 
-window.addEventListener('keydown', e => {
-  if (e.key === 'Process' || (!e.code && e.keyCode >= 220 && !e.ctrlKey)) {
-    if (!e.repeat) imeQueue.push(null);
-    imeEl.focus();
-    resumeAudio();
-  }
-}, { capture: true, passive: false });
+  const IME_MAP = { ' ': 'Space', 'a': 'KeyA', 'd': 'KeyD', 'w': 'KeyW', 's': 'KeyS', 'r': 'KeyR' };
+  const imeQueue = [];
 
-imeEl.addEventListener('input', e => {
-  const ch   = (e.data || '').toLowerCase();
-  const code = IME_MAP[ch] || null;
-  const i    = imeQueue.indexOf(null);
-  if (i >= 0) imeQueue[i] = code;
-  if (code) { keys[code] = true; dbgEl.textContent = `IME: "${ch}" → ${code}`; }
-  imeEl.value = '';
-});
+  window.addEventListener('keydown', e => {
+    if (e.key === 'Process' || (!e.code && e.keyCode >= 220 && !e.ctrlKey)) {
+      if (!e.repeat) imeQueue.push(null);
+      imeEl.focus();
+      resumeAudio();
+    }
+  }, { capture: true, passive: false });
 
-window.addEventListener('keyup', e => {
-  if (e.key === 'Process' || (!e.code && e.keyCode >= 220 && !e.ctrlKey)) {
-    const code = imeQueue.shift();
-    // Defer 1 frame — keyup fires before requestAnimationFrame, so deferring
-    // prevents the key release from clearing the flag before the game loop sees it.
-    if (code) requestAnimationFrame(() => { keys[code] = false; });
-  }
-}, { capture: true });
+  imeEl.addEventListener('input', e => {
+    const ch   = (e.data || '').toLowerCase();
+    const code = IME_MAP[ch] || null;
+    const i    = imeQueue.indexOf(null);
+    if (i >= 0) imeQueue[i] = code;
+    if (code) { keys[code] = true; dbgEl.textContent = `IME: "${ch}" → ${code}`; }
+    imeEl.value = '';
+  });
 
-function refocus() { imeEl.focus(); }
-refocus();
-document.addEventListener('pointerdown', () => setTimeout(refocus, 0));
+  window.addEventListener('keyup', e => {
+    if (e.key === 'Process' || (!e.code && e.keyCode >= 220 && !e.ctrlKey)) {
+      const code = imeQueue.shift();
+      // Defer 1 frame — keyup fires before requestAnimationFrame, so deferring
+      // prevents the key release from clearing the flag before the game loop sees it.
+      if (code) requestAnimationFrame(() => { keys[code] = false; });
+    }
+  }, { capture: true });
+
+  const refocus = () => imeEl.focus();
+  refocus();
+  document.addEventListener('pointerdown', () => setTimeout(refocus, 0));
+}
 
 // ── On-screen jump button ──────────────────────────────────────────────────────
 function bindBtn(id, code) {

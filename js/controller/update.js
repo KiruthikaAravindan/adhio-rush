@@ -86,12 +86,14 @@ export function update() {
   // ── Prize box — hit from below ────────────────────────────────────────────────
   for (const b of prizeBoxes) {
     if (b.hit) continue;
-    if (player.vy < 0 &&
-        player.x + player.w > b.x && player.x < b.x + b.w &&
-        player.y <= b.y + b.h && player.y + 4 >= b.y + b.h) {
+    // Rising (vy<0) and the player's head has entered the box → bonk.
+    // Overlap-based so fast upward motion can't skip the trigger.
+    if (player.vy < 0 && overlap(player, b)) {
       b.hit = true;
       SFX.prize();
       burst(b.x + b.w / 2, b.y, '#FFD700');
+      player.y  = b.y + b.h;   // stop at the box's underside
+      player.vy = 1.5;         // knock back down
       gameState.quizActive        = true;
       gameState.quizData          = QUIZ_QUESTIONS[b.qi];
       gameState.quizSelected      = 0;

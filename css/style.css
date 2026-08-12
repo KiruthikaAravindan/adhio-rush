@@ -124,6 +124,17 @@ body.is-touch #touch-controls {
 }
 .tbtn-restart:active { background: rgba(255,215,0,0.45); }
 
+.tbtn-fs {
+  top: 6px; right: 52px;
+  width: 38px; height: 38px;
+  border-radius: 8px;
+  font-size: 17px;
+  background: rgba(174,238,255,0.12);
+  border-color: rgba(174,238,255,0.45);
+  color: #aef;
+}
+.tbtn-fs:active { background: rgba(174,238,255,0.45); }
+
 /* ── Landscape prompt — shown in portrait on touch devices only ── */
 #landscape-prompt {
   position: fixed;

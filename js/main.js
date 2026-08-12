@@ -34,19 +34,35 @@ window.addEventListener('resize', resizeGame);
 // Re-fit after fullscreen / orientation changes (some browsers report the new
 // viewport size a frame late).
 window.addEventListener('orientationchange', () => setTimeout(resizeGame, 120));
-document.addEventListener('fullscreenchange', () => setTimeout(resizeGame, 120));
+document.addEventListener('fullscreenchange',       () => setTimeout(resizeGame, 120));
+document.addEventListener('webkitfullscreenchange', () => setTimeout(resizeGame, 120));
 resizeGame();
 
-// Request native fullscreen + landscape lock (best-effort; iOS Safari ignores).
-function goFullscreen() {
-  const el = document.documentElement;
-  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.webkitRequestFullScreen;
-  if (req) { try { req.call(el).catch(() => {}); } catch (_) {} }
-  if (screen.orientation && screen.orientation.lock) {
-    try { screen.orientation.lock('landscape').catch(() => {}); } catch (_) {}
-  }
-  setTimeout(resizeGame, 150);
+// ── Fullscreen (Android Chrome; iOS Safari has no JS fullscreen for non-video) ──
+function fsElement() {
+  return document.fullscreenElement || document.webkitFullscreenElement;
 }
+function lockLandscape() {
+  if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock('landscape').catch(() => {});
+  }
+}
+function enterFullscreen() {
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!req) return;
+  try {
+    const p = req.call(el);
+    if (p && p.then) p.then(lockLandscape).catch(() => {});
+    else lockLandscape();
+  } catch (_) {}
+  setTimeout(resizeGame, 200);
+}
+function exitFullscreen() {
+  const ex = document.exitFullscreen || document.webkitExitFullscreen;
+  if (ex) try { ex.call(document); } catch (_) {}
+}
+function toggleFullscreen() { fsElement() ? exitFullscreen() : enterFullscreen(); }
 
 // ── Welcome modal (touch only; desktop plays immediately) ───────────────────────
 const welcomeModal = document.getElementById('welcome-modal');
@@ -54,9 +70,14 @@ if (IS_TOUCH) {
   document.getElementById('btn-start').addEventListener('pointerdown', e => {
     e.preventDefault();
     resumeAudio();
-    goFullscreen();
+    enterFullscreen();
     welcomeModal.classList.add('hidden');
     canvas.focus();
+  });
+  // Manual fullscreen toggle — re-enter after an orientation change drops it.
+  document.getElementById('btn-fs').addEventListener('pointerdown', e => {
+    e.preventDefault();
+    toggleFullscreen();
   });
 } else {
   welcomeModal.classList.add('hidden');
