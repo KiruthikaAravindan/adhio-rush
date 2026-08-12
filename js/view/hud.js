@@ -5,6 +5,7 @@ import { coins } from '../model/level.js';
 
 export function syncUI() {
   document.getElementById('score').textContent = gameState.score;
+  document.getElementById('best').textContent  = Math.max(gameState.bestScore, gameState.score);
   document.getElementById('lives').textContent = gameState.lives;
   document.getElementById('coins').textContent = gameState.coinCount;
 }
@@ -15,17 +16,33 @@ export function drawOverlay() {
   ctx.textAlign = 'center';
   if (gameState.gameOver) {
     ctx.fillStyle = '#e63c00'; ctx.font = 'bold 58px Courier New';
-    ctx.fillText('GAME OVER', CANVAS_W/2, CANVAS_H/2 - 18);
+    ctx.fillText('GAME OVER', CANVAS_W/2, CANVAS_H/2 - 30);
     ctx.fillStyle = '#fff'; ctx.font = '24px Courier New';
-    ctx.fillText(`Score: ${gameState.score}`, CANVAS_W/2, CANVAS_H/2 + 30);
-    ctx.fillText('Press  R  or tap Restart', CANVAS_W/2, CANVAS_H/2 + 65);
+    ctx.fillText(`Score: ${gameState.score}`, CANVAS_W/2, CANVAS_H/2 + 18);
+    drawBestLine(CANVAS_H/2 + 50);
+    ctx.fillStyle = '#fff'; ctx.font = '24px Courier New';
+    ctx.fillText('Press  R  or tap Restart', CANVAS_W/2, CANVAS_H/2 + 88);
   } else if (gameState.gameWon) {
     ctx.fillStyle = '#FFD700'; ctx.font = 'bold 62px Courier New';
-    ctx.fillText('YOU WIN!', CANVAS_W/2, CANVAS_H/2 - 24);
+    ctx.fillText('YOU WIN!', CANVAS_W/2, CANVAS_H/2 - 40);
     ctx.fillStyle = '#fff'; ctx.font = '24px Courier New';
-    ctx.fillText(`Final Score: ${gameState.score}`, CANVAS_W/2, CANVAS_H/2 + 28);
-    ctx.fillText(`Notes: ${gameState.coinCount} / ${coins.length}`, CANVAS_W/2, CANVAS_H/2 + 60);
-    ctx.fillText('Press  R  or tap Restart', CANVAS_W/2, CANVAS_H/2 + 96);
+    ctx.fillText(`Final Score: ${gameState.score}`, CANVAS_W/2, CANVAS_H/2 + 6);
+    ctx.fillText(`Notes: ${gameState.coinCount} / ${coins.length}`, CANVAS_W/2, CANVAS_H/2 + 36);
+    drawBestLine(CANVAS_H/2 + 70);
+    ctx.fillStyle = '#fff'; ctx.font = '24px Courier New';
+    ctx.fillText('Press  R  or tap Restart', CANVAS_W/2, CANVAS_H/2 + 106);
+  }
+}
+
+// Best-score line: golden "NEW BEST!" if this run set the record, else plain best.
+function drawBestLine(y) {
+  ctx.textAlign = 'center';
+  if (gameState.newBest) {
+    ctx.fillStyle = '#FFD700'; ctx.font = 'bold 22px Courier New';
+    ctx.fillText(`★ NEW BEST: ${gameState.bestScore} ★`, CANVAS_W/2, y);
+  } else {
+    ctx.fillStyle = '#aef'; ctx.font = '20px Courier New';
+    ctx.fillText(`Best: ${gameState.bestScore}`, CANVAS_W/2, y);
   }
 }
 

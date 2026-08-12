@@ -1,5 +1,5 @@
 import { WORLD_W, GRAVITY, CANVAS_W } from '../constants.js';
-import { gameState, player, particles, burst } from '../model/state.js';
+import { gameState, player, particles, burst, commitBestScore } from '../model/state.js';
 import { coins, enemies, prizeBoxes, pigeons, QUIZ_QUESTIONS } from '../model/level.js';
 import { SFX } from '../audio.js';
 import { keys, isJump, isLeft, isRight, isRestart } from './input.js';
@@ -17,7 +17,7 @@ export function update() {
     gameState.restartHeld = false;
   }
 
-  if (gameState.gameOver || gameState.gameWon) return;
+  if (gameState.gameOver || gameState.gameWon) { commitBestScore(); return; }
 
   // ── Quiz overlay (pauses everything else) ────────────────────────────────────
   if (gameState.quizActive) {
@@ -52,7 +52,7 @@ export function update() {
 
   const jumpNow = isJump();
   if (jumpNow && !gameState.jumpDown && player.onGround) {
-    player.vy = JUMP; player.onGround = false; SFX.jump();
+    player.vy = JUMP * (gameState.jumpScale ?? 1); player.onGround = false; SFX.jump();
   }
   gameState.jumpDown = jumpNow;
 

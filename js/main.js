@@ -18,8 +18,10 @@ import { syncUI, drawOverlay, drawQuiz } from './view/hud.js';
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches;
 if (IS_TOUCH) document.body.classList.add('is-touch');
 
-// Slower, more controllable walking speed on touch devices.
+// Slower, more controllable walking speed on touch devices; higher jump so the
+// reduced horizontal speed can still clear the up-and-across platform gaps.
 gameState.speedScale = IS_TOUCH ? 0.62 : 1;
+gameState.jumpScale  = IS_TOUCH ? 1.2  : 1;
 
 // ── Responsive scaling ─────────────────────────────────────────────────────────
 const gameWrap = document.getElementById('game-wrap');

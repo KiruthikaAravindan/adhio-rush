@@ -41,6 +41,7 @@ export function resetGame() {
   gameState.coinCount   = 0;
   gameState.gameOver    = false;
   gameState.gameWon     = false;
+  gameState.newBest     = false;
   gameState.quizActive  = false;
   gameState.quizData    = null;
   gameState.quizSelected = 0;

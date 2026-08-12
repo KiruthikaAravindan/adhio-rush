@@ -1,3 +1,9 @@
+const BEST_KEY = 'marioRushBest';
+function loadBest() {
+  try { return parseInt(localStorage.getItem(BEST_KEY), 10) || 0; }
+  catch (_) { return 0; }
+}
+
 export const gameState = {
   score: 0,
   lives: 3,
@@ -7,6 +13,11 @@ export const gameState = {
   cameraX: 0,
   restartHeld: false,
   jumpDown: false,
+
+  bestScore: loadBest(),   // persisted personal best
+  newBest: false,          // true when the current run beat the record
+  speedScale: 1,           // walk-speed multiplier (reduced on touch)
+  jumpScale: 1,            // jump-height multiplier (raised on touch)
 
   // quiz
   quizActive: false,
@@ -23,6 +34,15 @@ export const gameState = {
   pigeonTimer: 0,
   pigeonTarget: 360,
 };
+
+// Persist the best score once a run ends. Idempotent — safe to call each frame.
+export function commitBestScore() {
+  if (gameState.score > gameState.bestScore) {
+    gameState.bestScore = gameState.score;
+    gameState.newBest   = true;
+    try { localStorage.setItem(BEST_KEY, String(gameState.bestScore)); } catch (_) {}
+  }
+}
 
 export const player = {
   x: 100, y: 300, w: 32, h: 40,
