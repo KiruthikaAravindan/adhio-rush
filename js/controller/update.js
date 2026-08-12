@@ -45,8 +45,9 @@ export function update() {
   }
 
   // ── Player movement ───────────────────────────────────────────────────────────
-  if (isLeft())       { player.vx = -SPEED; player.facing = -1; }
-  else if (isRight()) { player.vx =  SPEED; player.facing =  1; }
+  const speed = SPEED * (gameState.speedScale ?? 1);
+  if (isLeft())       { player.vx = -speed; player.facing = -1; }
+  else if (isRight()) { player.vx =  speed; player.facing =  1; }
   else player.vx *= 0.72;
 
   const jumpNow = isJump();

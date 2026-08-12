@@ -18,6 +18,9 @@ import { syncUI, drawOverlay, drawQuiz } from './view/hud.js';
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches;
 if (IS_TOUCH) document.body.classList.add('is-touch');
 
+// Slower, more controllable walking speed on touch devices.
+gameState.speedScale = IS_TOUCH ? 0.62 : 1;
+
 // ── Responsive scaling ─────────────────────────────────────────────────────────
 const gameWrap = document.getElementById('game-wrap');
 
@@ -28,7 +31,22 @@ function resizeGame() {
   gameWrap.style.top  = `${(window.innerHeight - CANVAS_H * scale) / 2}px`;
 }
 window.addEventListener('resize', resizeGame);
+// Re-fit after fullscreen / orientation changes (some browsers report the new
+// viewport size a frame late).
+window.addEventListener('orientationchange', () => setTimeout(resizeGame, 120));
+document.addEventListener('fullscreenchange', () => setTimeout(resizeGame, 120));
 resizeGame();
+
+// Request native fullscreen + landscape lock (best-effort; iOS Safari ignores).
+function goFullscreen() {
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen || el.webkitRequestFullScreen;
+  if (req) { try { req.call(el).catch(() => {}); } catch (_) {} }
+  if (screen.orientation && screen.orientation.lock) {
+    try { screen.orientation.lock('landscape').catch(() => {}); } catch (_) {}
+  }
+  setTimeout(resizeGame, 150);
+}
 
 // ── Welcome modal (touch only; desktop plays immediately) ───────────────────────
 const welcomeModal = document.getElementById('welcome-modal');
@@ -36,6 +54,7 @@ if (IS_TOUCH) {
   document.getElementById('btn-start').addEventListener('pointerdown', e => {
     e.preventDefault();
     resumeAudio();
+    goFullscreen();
     welcomeModal.classList.add('hidden');
     canvas.focus();
   });

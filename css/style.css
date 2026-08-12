@@ -64,10 +64,12 @@ body.is-touch #touch-controls {
   pointer-events: none;   /* pass-through; individual controls re-enable */
 }
 
-/* Virtual joystick (Option C) */
+/* Virtual joystick (Option C) — sits ~2/5 up the screen for thumb comfort */
 #joystick {
   position: absolute;
-  bottom: 18px; left: 18px;
+  top: 60%;                 /* center at 2/5 up from the bottom */
+  left: 18px;
+  transform: translateY(-50%);
   width: 118px; height: 118px;
   border-radius: 50%;
   background: rgba(255,255,255,0.10);
