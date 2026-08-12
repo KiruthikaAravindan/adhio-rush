@@ -1,6 +1,5 @@
-import { WORLD_W } from '../constants.js';
 import { gameState, player, burst } from '../model/state.js';
-import { platforms, coins, enemies, prizeBoxes, pigeons } from '../model/level.js';
+import { initLevel, platforms, coins, enemies, prizeBoxes, pigeons } from '../model/level.js';
 
 export function overlap(a, b) {
   return a.x < b.x + b.w && a.x + a.w > b.x &&
@@ -35,28 +34,41 @@ export function resetPlayer() {
   gameState.cameraX = 0;
 }
 
-export function resetGame() {
-  gameState.score       = 0;
-  gameState.lives       = 3;
-  gameState.coinCount   = 0;
-  gameState.gameOver    = false;
-  gameState.gameWon     = false;
-  gameState.newBest     = false;
-  gameState.quizActive  = false;
-  gameState.quizData    = null;
-  gameState.quizSelected = 0;
-  gameState.quizAnswered = false;
+function clearQuiz() {
+  gameState.quizActive       = false;
+  gameState.quizData         = null;
+  gameState.quizSelected     = 0;
+  gameState.quizAnswered     = false;
   gameState.quizAnswerCorrect = false;
-  gameState.quizTimer   = 0;
-  gameState.pigeonTimer = 0;
+  gameState.quizTimer        = 0;
+}
+
+export function resetGame() {
+  gameState.score        = 0;
+  gameState.lives        = 3;
+  gameState.coinCount    = 0;
+  gameState.gameOver     = false;
+  gameState.gameWon      = false;
+  gameState.levelComplete = false;
+  gameState.currentLevel = 1;
+  gameState.worldW       = 3200;
+  gameState.newBest      = false;
+  gameState.restartHeld  = false;
+  gameState.pigeonTimer  = 0;
   gameState.pigeonTarget = 360;
+  clearQuiz();
+  initLevel(1);
   resetPlayer();
-  enemies.forEach(e => {
-    e.alive = true;
-    e.x     = (e.left + e.right) / 2;
-    e.vx    = e.origVx;
-  });
-  coins.forEach(c => { c.collected = false; });
-  prizeBoxes.forEach(b => { b.hit = false; });
-  pigeons.length = 0;
+}
+
+export function nextLevel() {
+  gameState.levelComplete = false;
+  gameState.currentLevel  = 2;
+  gameState.worldW        = 4700;
+  gameState.restartHeld   = false;
+  gameState.pigeonTimer   = 0;
+  gameState.pigeonTarget  = 220;  // pigeons appear sooner in level 2
+  clearQuiz();
+  initLevel(2);
+  resetPlayer();
 }

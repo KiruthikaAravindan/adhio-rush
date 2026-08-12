@@ -10,14 +10,17 @@ export const gameState = {
   coinCount: 0,
   gameOver: false,
   gameWon: false,
+  levelComplete: false,
+  currentLevel: 1,
+  worldW: 3200,          // updated per level
   cameraX: 0,
   restartHeld: false,
   jumpDown: false,
 
-  bestScore: loadBest(),   // persisted personal best
-  newBest: false,          // true when the current run beat the record
-  speedScale: 1,           // walk-speed multiplier (reduced on touch)
-  jumpScale: 1,            // jump-height multiplier (raised on touch)
+  bestScore: loadBest(),
+  newBest: false,
+  speedScale: 1,
+  jumpScale: 1,
 
   // quiz
   quizActive: false,

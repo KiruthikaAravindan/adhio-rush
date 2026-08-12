@@ -1,23 +1,29 @@
-import { WORLD_W, GRAVITY, CANVAS_W } from '../constants.js';
+import { GRAVITY, CANVAS_W } from '../constants.js';
 import { gameState, player, particles, burst, commitBestScore } from '../model/state.js';
 import { coins, enemies, prizeBoxes, pigeons, QUIZ_QUESTIONS } from '../model/level.js';
 import { SFX } from '../audio.js';
 import { keys, isJump, isLeft, isRight, isRestart } from './input.js';
-import { overlap, resolveVsWorld, resetPlayer, resetGame } from './physics.js';
+import { overlap, resolveVsWorld, resetPlayer, resetGame, nextLevel } from './physics.js';
 
 const SPEED = 5.5;
 const JUMP  = -11;
 
 export function update() {
-  // ── Restart ──────────────────────────────────────────────────────────────────
+  // ── Restart / level-advance ───────────────────────────────────────────────────
   if (isRestart()) {
-    if (!gameState.restartHeld && (gameState.gameOver || gameState.gameWon)) resetGame();
+    if (!gameState.restartHeld) {
+      if (gameState.levelComplete)              nextLevel();
+      else if (gameState.gameOver || gameState.gameWon) resetGame();
+    }
     gameState.restartHeld = true;
   } else {
     gameState.restartHeld = false;
   }
 
-  if (gameState.gameOver || gameState.gameWon) { commitBestScore(); return; }
+  if (gameState.gameOver || gameState.gameWon || gameState.levelComplete) {
+    commitBestScore();
+    return;
+  }
 
   // ── Quiz overlay (pauses everything else) ────────────────────────────────────
   if (gameState.quizActive) {
@@ -28,7 +34,7 @@ export function update() {
       if (navL  && !gameState.quizNavL)  gameState.quizSelected = (gameState.quizSelected + 2) % 3;
       if (navR  && !gameState.quizNavR)  gameState.quizSelected = (gameState.quizSelected + 1) % 3;
       if (navOk && !gameState.quizNavOk) {
-        gameState.quizAnswered     = true;
+        gameState.quizAnswered      = true;
         gameState.quizAnswerCorrect = gameState.quizSelected === gameState.quizData.answer;
         if (gameState.quizAnswerCorrect) { gameState.score += 500; SFX.quizOk(); }
         else SFX.quizBad();
@@ -57,7 +63,7 @@ export function update() {
   gameState.jumpDown = jumpNow;
 
   player.vy = Math.min(player.vy + GRAVITY, 16);
-  player.x  = Math.max(0, Math.min(player.x + player.vx, WORLD_W - player.w));
+  player.x  = Math.max(0, Math.min(player.x + player.vx, gameState.worldW - player.w));
   player.y += player.vy;
 
   resolveVsWorld();
@@ -86,14 +92,12 @@ export function update() {
   // ── Prize box — hit from below ────────────────────────────────────────────────
   for (const b of prizeBoxes) {
     if (b.hit) continue;
-    // Rising (vy<0) and the player's head has entered the box → bonk.
-    // Overlap-based so fast upward motion can't skip the trigger.
     if (player.vy < 0 && overlap(player, b)) {
       b.hit = true;
       SFX.prize();
       burst(b.x + b.w / 2, b.y, '#FFD700');
-      player.y  = b.y + b.h;   // stop at the box's underside
-      player.vy = 1.5;         // knock back down
+      player.y  = b.y + b.h;
+      player.vy = 1.5;
       gameState.quizActive        = true;
       gameState.quizData          = QUIZ_QUESTIONS[b.qi];
       gameState.quizSelected      = 0;
@@ -102,18 +106,18 @@ export function update() {
     }
   }
 
-  // ── Pigeon spawning (second half of world only) ───────────────────────────────
-  if (player.x > WORLD_W * 0.45) {
+  // ── Pigeon spawning — Level 2 only ────────────────────────────────────────────
+  if (gameState.currentLevel === 2) {
     gameState.pigeonTimer++;
     if (gameState.pigeonTimer >= gameState.pigeonTarget) {
       gameState.pigeonTimer  = 0;
-      gameState.pigeonTarget = 280 + Math.floor(Math.random() * 200);
+      gameState.pigeonTarget = 200 + Math.floor(Math.random() * 180);
       const fromLeft = Math.random() < 0.5;
       pigeons.push({
         x: fromLeft ? gameState.cameraX - 60 : gameState.cameraX + CANVAS_W + 20,
-        y: 200 + Math.floor(Math.random() * 140),
+        y: 180 + Math.floor(Math.random() * 160),
         w: 36, h: 28,
-        vx: fromLeft ? 2.8 : -2.8,
+        vx: fromLeft ? 3.0 : -3.0,
         wingFrame: 0, wingTimer: 0,
       });
       SFX.pigeon();
@@ -126,13 +130,13 @@ export function update() {
     pg.x += pg.vx;
     pg.wingTimer++;
     if (pg.wingTimer > 14) { pg.wingFrame = (pg.wingFrame + 1) % 2; pg.wingTimer = 0; }
-    if (pg.x < -100 || pg.x > WORLD_W + 100) { pigeons.splice(i, 1); continue; }
+    if (pg.x < -100 || pg.x > gameState.worldW + 100) { pigeons.splice(i, 1); continue; }
 
     if (!overlap(player, pg)) continue;
     if (player.vy > 0 && player.y + player.h < pg.y + pg.h * 0.6) {
       pigeons.splice(i, 1);
       player.vy = -9;
-      gameState.score += 300;
+      gameState.score += 500;   // pigeons worth more than basic enemies
       SFX.stomp();
       burst(pg.x + pg.w / 2, pg.y + pg.h / 2, '#aaaacc');
     } else if (player.invincible <= 0) {
@@ -182,10 +186,17 @@ export function update() {
     if (p.life <= 0) particles.splice(i, 1);
   }
 
-  // ── Camera + win ──────────────────────────────────────────────────────────────
-  gameState.cameraX = Math.max(0, Math.min(player.x - CANVAS_W / 3, WORLD_W - CANVAS_W));
+  // ── Camera ────────────────────────────────────────────────────────────────────
+  gameState.cameraX = Math.max(0, Math.min(player.x - CANVAS_W / 3, gameState.worldW - CANVAS_W));
 
-  if (player.x > WORLD_W - 130 && !gameState.gameWon) {
-    gameState.gameWon = true; SFX.win();
+  // ── Win / level complete ──────────────────────────────────────────────────────
+  if (player.x > gameState.worldW - 130) {
+    if (gameState.currentLevel === 1) {
+      gameState.levelComplete = true;
+      SFX.levelComplete();
+    } else if (!gameState.gameWon) {
+      gameState.gameWon = true;
+      SFX.win();
+    }
   }
 }

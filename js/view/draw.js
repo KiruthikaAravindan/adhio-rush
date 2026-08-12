@@ -1,5 +1,5 @@
 import { ctx } from '../canvas.js';
-import { WORLD_W, CANVAS_W, CANVAS_H } from '../constants.js';
+import { CANVAS_W, CANVAS_H } from '../constants.js';
 import { gameState, player, particles, media } from '../model/state.js';
 import { platforms, coins, enemies, prizeBoxes, pigeons } from '../model/level.js';
 
@@ -178,7 +178,7 @@ export function drawPlayer() {
 }
 
 export function drawFlag() {
-  const fx = WORLD_W - 96 - gameState.cameraX;
+  const fx = gameState.worldW - 96 - gameState.cameraX;
   if (fx < -60 || fx > CANVAS_W + 10) return;
   ctx.fillStyle = '#aaa'; ctx.fillRect(fx, 200, 6, 200);
   ctx.fillStyle = '#e63c00';

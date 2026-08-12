@@ -1,25 +1,21 @@
 import { canvas, ctx } from './canvas.js';
 import { CANVAS_W, CANVAS_H } from './constants.js';
-import { resumeAudio } from './audio.js';
+import { resumeAudio, startBgMusic, setBgMusicMuted } from './audio.js';
 import { gameState } from './model/state.js';
 import { platforms, coins, enemies, prizeBoxes, pigeons } from './model/level.js';
 import './controller/input.js';
-import { resetGame } from './controller/physics.js';
+import { resetGame, nextLevel } from './controller/physics.js';
 import { update } from './controller/update.js';
 import {
   drawBg, drawPlatform, drawNote, drawEnemy, drawPigeon,
   drawPrizeBox, drawPlayer, drawFlag, drawParticles,
 } from './view/draw.js';
-import { syncUI, drawOverlay, drawQuiz } from './view/hud.js';
+import { syncUI, drawOverlay, drawLevelComplete, drawQuiz } from './view/hud.js';
 
-// ── Touch-device detection — mobile UI only shows on touch-primary devices ──────
-// (pointer: coarse) reflects the PRIMARY pointer, so touchscreen laptops with a
-// mouse/trackpad stay on the desktop (keyboard) experience — no joystick shown.
+// ── Touch-device detection ─────────────────────────────────────────────────────
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches;
 if (IS_TOUCH) document.body.classList.add('is-touch');
 
-// Slower, more controllable walking speed on touch devices; higher jump so the
-// reduced horizontal speed can still clear the up-and-across platform gaps.
 gameState.speedScale = IS_TOUCH ? 0.62 : 1;
 gameState.jumpScale  = IS_TOUCH ? 1.2  : 1;
 
@@ -33,24 +29,19 @@ function resizeGame() {
   gameWrap.style.top  = `${(window.innerHeight - CANVAS_H * scale) / 2}px`;
 }
 window.addEventListener('resize', resizeGame);
-// Re-fit after fullscreen / orientation changes (some browsers report the new
-// viewport size a frame late).
 window.addEventListener('orientationchange', () => setTimeout(resizeGame, 120));
 document.addEventListener('fullscreenchange',       () => setTimeout(resizeGame, 120));
 document.addEventListener('webkitfullscreenchange', () => setTimeout(resizeGame, 120));
 resizeGame();
 
-// ── Fullscreen (Android Chrome; iOS Safari has no JS fullscreen for non-video) ──
-function fsElement() {
-  return document.fullscreenElement || document.webkitFullscreenElement;
-}
+// ── Fullscreen ─────────────────────────────────────────────────────────────────
+function fsElement() { return document.fullscreenElement || document.webkitFullscreenElement; }
 function lockLandscape() {
-  if (screen.orientation && screen.orientation.lock) {
+  if (screen.orientation && screen.orientation.lock)
     screen.orientation.lock('landscape').catch(() => {});
-  }
 }
 function enterFullscreen() {
-  const el = document.documentElement;
+  const el  = document.documentElement;
   const req = el.requestFullscreen || el.webkitRequestFullscreen;
   if (!req) return;
   try {
@@ -66,33 +57,55 @@ function exitFullscreen() {
 }
 function toggleFullscreen() { fsElement() ? exitFullscreen() : enterFullscreen(); }
 
-// ── Welcome modal (touch only; desktop plays immediately) ───────────────────────
+// ── Background music — start once on first user interaction ───────────────────
+let bgStarted = false;
+function maybeStartBgMusic() {
+  if (bgStarted) return;
+  bgStarted = true;
+  startBgMusic();
+}
+
+// ── Welcome modal ──────────────────────────────────────────────────────────────
 const welcomeModal = document.getElementById('welcome-modal');
 if (IS_TOUCH) {
   document.getElementById('btn-start').addEventListener('pointerdown', e => {
     e.preventDefault();
     resumeAudio();
+    maybeStartBgMusic();
     enterFullscreen();
     welcomeModal.classList.add('hidden');
     canvas.focus();
   });
-  // Manual fullscreen toggle — re-enter after an orientation change drops it.
   document.getElementById('btn-fs').addEventListener('pointerdown', e => {
     e.preventDefault();
     toggleFullscreen();
   });
 } else {
   welcomeModal.classList.add('hidden');
+  // Start music on first key or click
+  document.addEventListener('keydown',   maybeStartBgMusic, { once: true });
+  document.addEventListener('pointerdown', maybeStartBgMusic, { once: true });
 }
 
-// ── Restart button ─────────────────────────────────────────────────────────────
+// ── Restart / next-level button ────────────────────────────────────────────────
 document.getElementById('btn-restart').addEventListener('pointerdown', e => {
-  e.preventDefault(); resumeAudio(); resetGame(); syncUI();
+  e.preventDefault();
+  resumeAudio();
+  maybeStartBgMusic();
+  if (gameState.levelComplete) nextLevel();
+  else resetGame();
+  syncUI();
 });
 
 // ── Game loop ──────────────────────────────────────────────────────────────────
 function loop() {
   update();
+
+  // Mute bg music during quiz / pause states; unmute during active play
+  const muteMusic = gameState.quizActive || gameState.gameOver ||
+                    gameState.gameWon    || gameState.levelComplete;
+  setBgMusicMuted(muteMusic);
+
   ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
   drawBg();
   platforms.forEach(drawPlatform);
@@ -105,6 +118,7 @@ function loop() {
   drawParticles();
   syncUI();
   if (gameState.quizActive)                    drawQuiz();
+  if (gameState.levelComplete)                 drawLevelComplete();
   if (gameState.gameOver || gameState.gameWon) drawOverlay();
   requestAnimationFrame(loop);
 }

@@ -37,17 +37,19 @@ body.is-touch {
   top: 0; left: 0; right: 0;
   z-index: 5;
   display: flex;
+  align-items: center;
   justify-content: center;
   gap: 32px;
   padding: 6px 12px;
-  background: rgba(0,0,0,0.45);
   color: #fff;
   font-size: 15px;
   font-weight: bold;
   letter-spacing: 1px;
   pointer-events: none;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.6);
 }
-#ui span span { color: #FFD700; }
+#ui span { display: flex; align-items: center; gap: 4px; }
+#ui span span { color: #FFD700; min-width: 28px; text-align: left; }
 
 /* ══════════════════════════════════════════════════════════════════
    MOBILE-ONLY UI — hidden by default, shown only on touch devices
@@ -106,10 +108,11 @@ body.is-touch #touch-controls {
 
 .tbtn-jump {
   bottom: 10px; right: 18px;
-  width: 92px; height: 92px;
-  font-size: 30px;
-  background: rgba(233,69,96,0.28);
-  border-color: rgba(233,69,96,0.7);
+  width: 112px; height: 112px;
+  font-size: 42px;
+  color: rgba(255,255,255,0.45);
+  background: rgba(233,69,96,0.22);
+  border-color: rgba(233,69,96,0.6);
 }
 .tbtn-jump:active, .tbtn-jump.pressed { background: rgba(233,69,96,0.6); }
 
