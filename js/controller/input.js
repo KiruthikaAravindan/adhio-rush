@@ -77,19 +77,64 @@ function refocus() { imeEl.focus(); }
 refocus();
 document.addEventListener('pointerdown', () => setTimeout(refocus, 0));
 
-// ── On-screen movement buttons ────────────────────────────────────────────────
+// ── On-screen jump button ──────────────────────────────────────────────────────
 function bindBtn(id, code) {
   const el = document.getElementById(id);
+  if (!el) return;
   const press   = e => { e.preventDefault(); resumeAudio(); keys[code] = true;  el.classList.add('pressed'); };
-  const release = e => { keys[code] = false; el.classList.remove('pressed'); };
+  const release = () => { keys[code] = false; el.classList.remove('pressed'); };
   el.addEventListener('pointerdown',   press);
   el.addEventListener('pointerup',     release);
   el.addEventListener('pointerleave',  release);
   el.addEventListener('pointercancel', release);
 }
-bindBtn('btn-left',  'ArrowLeft');
-bindBtn('btn-right', 'ArrowRight');
-bindBtn('btn-jump',  'Space');
+bindBtn('btn-jump', 'Space');
+
+// ── Virtual joystick (Option C) — drag left/right to move ───────────────────────
+const joy  = document.getElementById('joystick');
+const knob = document.getElementById('joy-knob');
+if (joy && knob) {
+  const RADIUS   = 44;   // max knob travel from center (px)
+  const DEADZONE = 12;   // ignore tiny drags
+  let joyId = null;      // active pointer id
+
+  function setDir(dx) {
+    keys['ArrowLeft']  = dx < -DEADZONE;
+    keys['ArrowRight'] = dx >  DEADZONE;
+  }
+  function moveKnob(dx, dy) {
+    const dist = Math.hypot(dx, dy);
+    const clamp = dist > RADIUS ? RADIUS / dist : 1;
+    knob.style.transform = `translate(${dx * clamp}px, ${dy * clamp}px)`;
+  }
+  function resetJoy() {
+    joyId = null;
+    keys['ArrowLeft'] = keys['ArrowRight'] = false;
+    knob.style.transform = '';
+    joy.classList.remove('active');
+  }
+
+  joy.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    resumeAudio();
+    joyId = e.pointerId;
+    joy.setPointerCapture(e.pointerId);
+    joy.classList.add('active');
+    const r = joy.getBoundingClientRect();
+    const dx = e.clientX - (r.left + r.width / 2);
+    const dy = e.clientY - (r.top  + r.height / 2);
+    setDir(dx); moveKnob(dx, dy);
+  });
+  joy.addEventListener('pointermove', e => {
+    if (e.pointerId !== joyId) return;
+    const r = joy.getBoundingClientRect();
+    const dx = e.clientX - (r.left + r.width / 2);
+    const dy = e.clientY - (r.top  + r.height / 2);
+    setDir(dx); moveKnob(dx, dy);
+  });
+  joy.addEventListener('pointerup',     e => { if (e.pointerId === joyId) resetJoy(); });
+  joy.addEventListener('pointercancel', e => { if (e.pointerId === joyId) resetJoy(); });
+}
 
 export const isJump    = () => keys['Space'] || keys['ArrowUp'] || keys['KeyW'] || keys['Enter'];
 export const isLeft    = () => keys['ArrowLeft']  || keys['KeyA'];

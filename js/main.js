@@ -1,9 +1,9 @@
 import { canvas, ctx } from './canvas.js';
 import { CANVAS_W, CANVAS_H } from './constants.js';
 import { resumeAudio } from './audio.js';
-import { media, gameState } from './model/state.js';
+import { gameState } from './model/state.js';
 import { platforms, coins, enemies, prizeBoxes, pigeons } from './model/level.js';
-import './controller/input.js';                          // registers key listeners + button bindings
+import './controller/input.js';
 import { resetGame } from './controller/physics.js';
 import { update } from './controller/update.js';
 import {
@@ -12,25 +12,43 @@ import {
 } from './view/draw.js';
 import { syncUI, drawOverlay, drawQuiz } from './view/hud.js';
 
-// ── Restart button ────────────────────────────────────────────────────────────
+// ── Touch-device detection — mobile UI only shows on touch devices ──────────────
+const IS_TOUCH = ('ontouchstart' in window) || navigator.maxTouchPoints > 0;
+if (IS_TOUCH) document.body.classList.add('is-touch');
+
+// ── Responsive scaling ─────────────────────────────────────────────────────────
+const gameWrap = document.getElementById('game-wrap');
+
+function resizeGame() {
+  const scale = Math.min(window.innerWidth / CANVAS_W, window.innerHeight / CANVAS_H);
+  gameWrap.style.transform = `scale(${scale})`;
+  gameWrap.style.left = `${(window.innerWidth  - CANVAS_W * scale) / 2}px`;
+  gameWrap.style.top  = `${(window.innerHeight - CANVAS_H * scale) / 2}px`;
+}
+window.addEventListener('resize', resizeGame);
+resizeGame();
+
+// ── Welcome modal (touch only; desktop plays immediately) ───────────────────────
+const welcomeModal = document.getElementById('welcome-modal');
+if (IS_TOUCH) {
+  document.getElementById('btn-start').addEventListener('pointerdown', e => {
+    e.preventDefault();
+    resumeAudio();
+    welcomeModal.classList.add('hidden');
+    canvas.focus();
+  });
+} else {
+  welcomeModal.classList.add('hidden');
+}
+
+// ── Restart button ─────────────────────────────────────────────────────────────
 document.getElementById('btn-restart').addEventListener('pointerdown', e => {
   e.preventDefault(); resumeAudio(); resetGame(); syncUI();
 });
 
-// ── Custom sprite ─────────────────────────────────────────────────────────────
-document.getElementById('img-input').addEventListener('change', e => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const img = new Image();
-  img.onload = () => { media.playerImage = img; };
-  img.src = URL.createObjectURL(file);
-  document.getElementById('img-label').textContent = '✓ ' + file.name;
-});
-
-// ── Game loop ─────────────────────────────────────────────────────────────────
+// ── Game loop ──────────────────────────────────────────────────────────────────
 function loop() {
   update();
-
   ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
   drawBg();
   platforms.forEach(drawPlatform);
@@ -42,9 +60,8 @@ function loop() {
   drawPlayer();
   drawParticles();
   syncUI();
-  if (gameState.quizActive)                      drawQuiz();
-  if (gameState.gameOver || gameState.gameWon)   drawOverlay();
-
+  if (gameState.quizActive)                    drawQuiz();
+  if (gameState.gameOver || gameState.gameWon) drawOverlay();
   requestAnimationFrame(loop);
 }
 

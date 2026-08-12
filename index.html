@@ -2,30 +2,60 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <title>Mario Rush</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
 
-<div id="ui">
-  <span>SCORE: <span id="score">0</span></span>
-  <span>LIVES: <span id="lives">3</span></span>
-  <span>NOTES: <span id="coins">0</span></span>
-</div>
+  <!-- Mobile only: shown in portrait via CSS (body.is-touch) -->
+  <div id="landscape-prompt">
+    <div class="rotate-anim">📱</div>
+    <p>Rotate your device to play</p>
+  </div>
 
-<canvas id="gameCanvas" width="800" height="450"></canvas>
-<div id="keydbg"></div>
+  <!-- Mobile only: welcome / info modal -->
+  <div id="welcome-modal">
+    <div class="modal-box">
+      <h1>🎵 Mario Rush</h1>
+      <p>Collect music notes &nbsp;·&nbsp; Stomp enemies</p>
+      <p>Hit <strong style="color:#FFD700">?</strong> boxes for music quizzes!</p>
+      <div class="hint-row">
+        <span>🕹 &nbsp;Drag to move</span>
+        <span>▲ &nbsp;Jump</span>
+        <span>↺ &nbsp;Restart</span>
+      </div>
+      <button id="btn-start">▶ &nbsp;TAP TO PLAY</button>
+    </div>
+  </div>
 
-<div id="dpad">
-  <button class="dbtn" id="btn-left">◀</button>
-  <button class="dbtn" id="btn-jump">▲ Jump</button>
-  <button class="dbtn" id="btn-right">▶</button>
-  <button id="btn-restart">↺ Restart</button>
-  <label id="img-label" for="img-input">🖼 Custom sprite</label>
-  <input type="file" id="img-input" accept="image/*">
-</div>
+  <!-- Game container — JS scales this to fill the screen -->
+  <div id="game-wrap">
 
-<!-- Requires a web server (e.g. VS Code Live Server) — ES modules don't load via file:// -->
-<script type="module" src="js/main.js"></script>
+    <!-- HUD lives inside the wrap so it scales with the game -->
+    <div id="ui">
+      <span>⭐ <span id="score">0</span></span>
+      <span>❤️ <span id="lives">3</span></span>
+      <span>♪ <span id="coins">0</span></span>
+    </div>
+
+    <canvas id="gameCanvas" width="800" height="450"></canvas>
+
+    <!-- Mobile only: virtual joystick + jump (Option C) -->
+    <div id="touch-controls">
+      <div id="joystick">
+        <div id="joy-knob"></div>
+      </div>
+      <button class="tbtn tbtn-jump" id="btn-jump">▲</button>
+      <button class="tbtn tbtn-restart" id="btn-restart">↺</button>
+    </div>
+
+    <div id="keydbg"></div>
+  </div>
+
+  <script type="module" src="js/main.js"></script>
 </body>
 </html>
