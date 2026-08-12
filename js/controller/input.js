@@ -8,8 +8,6 @@ const KC = {
   65: 'KeyA', 68: 'KeyD', 83: 'KeyS', 87: 'KeyW', 82: 'KeyR',
 };
 
-const dbgEl = document.getElementById('keydbg');
-
 export function clearKeys() { for (const k in keys) keys[k] = false; }
 
 function handleKeyDown(e) {
@@ -19,7 +17,6 @@ function handleKeyDown(e) {
   e.preventDefault();
   e.stopPropagation();
   if (!e.repeat) keys[code] = true;
-  dbgEl.textContent = `key: ${code}`;
 }
 function handleKeyUp(e) {
   const code = e.code || KC[e.keyCode] || '';
@@ -64,7 +61,7 @@ if (!IS_TOUCH) {
     const code = IME_MAP[ch] || null;
     const i    = imeQueue.indexOf(null);
     if (i >= 0) imeQueue[i] = code;
-    if (code) { keys[code] = true; dbgEl.textContent = `IME: "${ch}" → ${code}`; }
+    if (code) { keys[code] = true; }
     imeEl.value = '';
   });
 
@@ -144,4 +141,4 @@ if (joy && knob) {
 export const isJump    = () => keys['Space'] || keys['ArrowUp'] || keys['KeyW'] || keys['Enter'];
 export const isLeft    = () => keys['ArrowLeft']  || keys['KeyA'];
 export const isRight   = () => keys['ArrowRight'] || keys['KeyD'];
-export const isRestart = () => keys['KeyR'];
+export const isRestart = () => keys['KeyR'] || keys['Space'] || keys['Enter'];

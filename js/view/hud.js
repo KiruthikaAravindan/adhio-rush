@@ -3,8 +3,6 @@ import { CANVAS_W, CANVAS_H } from '../constants.js';
 import { gameState } from '../model/state.js';
 import { coins } from '../model/level.js';
 
-const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches;
-
 export function syncUI() {
   document.getElementById('score').textContent = gameState.score;
   document.getElementById('best').textContent  = Math.max(gameState.bestScore, gameState.score);
@@ -27,16 +25,12 @@ export function drawLevelComplete() {
 
   ctx.fillStyle = '#fff'; ctx.font = '24px Courier New';
   ctx.fillText(`Score so far: ${gameState.score}`, CANVAS_W / 2, cy + 44);
-
-  drawRestartHint(IS_TOUCH ? 'Tap  ↺  to Continue' : 'Press  R  to Continue', cy + 106);
 }
 
 export function drawOverlay() {
   ctx.fillStyle = 'rgba(0,0,0,0.75)';
   ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
   ctx.textAlign = 'center';
-
-  const restartHint = IS_TOUCH ? 'Tap  ↺  to Restart' : 'Press  R  or tap  ↺';
   const cy = CANVAS_H / 2;
 
   if (gameState.gameOver) {
@@ -45,7 +39,6 @@ export function drawOverlay() {
     ctx.fillStyle = '#fff'; ctx.font = '28px Courier New';
     ctx.fillText(`Score: ${gameState.score}`, CANVAS_W / 2, cy + 10);
     drawBestLine(cy + 56);
-    drawRestartHint(restartHint, cy + 108);
   } else if (gameState.gameWon) {
     ctx.fillStyle = '#FFD700'; ctx.font = 'bold 68px Courier New';
     ctx.fillText('YOU WIN!', CANVAS_W / 2, cy - 64);
@@ -53,7 +46,6 @@ export function drawOverlay() {
     ctx.fillText(`Final Score: ${gameState.score}`, CANVAS_W / 2, cy - 12);
     ctx.fillText(`Notes: ${gameState.coinCount} / ${coins.length}`, CANVAS_W / 2, cy + 24);
     drawBestLine(cy + 66);
-    drawRestartHint(restartHint, cy + 114);
   }
 }
 
@@ -66,19 +58,6 @@ function drawBestLine(y) {
     ctx.fillStyle = '#aef'; ctx.font = '22px Courier New';
     ctx.fillText(`Best: ${gameState.bestScore}`, CANVAS_W / 2, y);
   }
-}
-
-function drawRestartHint(text, y) {
-  const btnW = IS_TOUCH ? 260 : 340, btnH = 46;
-  const bx = CANVAS_W / 2 - btnW / 2;
-  ctx.fillStyle = 'rgba(255,255,255,0.1)';
-  ctx.strokeStyle = 'rgba(255,255,255,0.28)';
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.rect(bx, y - btnH + 10, btnW, btnH);
-  ctx.fill(); ctx.stroke();
-  ctx.fillStyle = '#ddd'; ctx.font = `${IS_TOUCH ? 22 : 20}px Courier New`;
-  ctx.fillText(text, CANVAS_W / 2, y + 5);
 }
 
 export function drawQuiz() {

@@ -25,6 +25,31 @@ export function update() {
     return;
   }
 
+  // ── Celebration — both characters jump together for ~3 s then show overlay ────
+  if (gameState.celebrating) {
+    player.vx = 0;
+    player.vy = Math.min(player.vy + GRAVITY, 16);
+    player.y += player.vy;
+    resolveVsWorld();
+    gameState.celebrationTimer--;
+    for (let i = particles.length - 1; i >= 0; i--) {
+      const p = particles[i];
+      p.x += p.vx; p.y += p.vy; p.vy += 0.3; p.life -= 0.045;
+      if (p.life <= 0) particles.splice(i, 1);
+    }
+    if (gameState.celebrationTimer <= 0) {
+      gameState.celebrating = false;
+      if (gameState.currentLevel === 1) {
+        gameState.levelComplete = true;
+        SFX.levelComplete();
+      } else {
+        gameState.gameWon = true;
+        SFX.win();
+      }
+    }
+    return;
+  }
+
   // ── Quiz overlay (pauses everything else) ────────────────────────────────────
   if (gameState.quizActive) {
     if (!gameState.quizAnswered) {
@@ -112,6 +137,7 @@ export function update() {
     if (gameState.pigeonTimer >= gameState.pigeonTarget) {
       gameState.pigeonTimer  = 0;
       gameState.pigeonTarget = 200 + Math.floor(Math.random() * 180);
+    if (pigeons.length < 2) {
       const fromLeft = Math.random() < 0.5;
       pigeons.push({
         x: fromLeft ? gameState.cameraX - 60 : gameState.cameraX + CANVAS_W + 20,
@@ -121,6 +147,7 @@ export function update() {
         wingFrame: 0, wingTimer: 0,
       });
       SFX.pigeon();
+    }
     }
   }
 
@@ -194,19 +221,14 @@ export function update() {
     gameState.girlState = 'cheer';
   }
 
-  // ── Win / level complete ──────────────────────────────────────────────────────
-  if (player.x > gameState.worldW - 130) {
-    gameState.girlState = 'hearts';
-    if (gameState.currentLevel === 1 && !gameState.levelComplete) {
-      burst(gameState.worldW - 96, 360, '#ff66cc', 16);
-      burst(gameState.worldW - 96, 360, '#FFD700', 12);
-      gameState.levelComplete = true;
-      SFX.levelComplete();
-    } else if (gameState.currentLevel === 2 && !gameState.gameWon) {
-      burst(gameState.worldW - 96, 360, '#ff66cc', 16);
-      burst(gameState.worldW - 96, 360, '#FFD700', 12);
-      gameState.gameWon = true;
-      SFX.win();
-    }
+  // ── Win trigger — start celebration when player touches girl ──────────────────
+  if (!gameState.celebrating && player.x > gameState.worldW - 130) {
+    gameState.girlState        = 'hearts';
+    gameState.celebrating      = true;
+    gameState.celebrationTimer = 180;   // ~3 s at 60 fps
+    player.vx    = 0;
+    player.facing = 1;
+    burst(gameState.worldW - 96, 360, '#ff66cc', 16);
+    burst(gameState.worldW - 96, 360, '#FFD700', 12);
   }
 }

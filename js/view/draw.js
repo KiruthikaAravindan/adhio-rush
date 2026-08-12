@@ -126,44 +126,85 @@ export function drawPigeon(pg) {
   const px = pg.x - gameState.cameraX;
   if (px + pg.w < -10 || px > CANVAS_W + 10) return;
   const w = pg.w, h = pg.h;
-  const wingUp = pg.wingFrame === 0;
-  ctx.save(); ctx.translate(px, pg.y);
-  ctx.fillStyle = '#a0a0b8';
+  const wingUp    = pg.wingFrame === 0;
+  const goingLeft = pg.vx < 0;
+
+  ctx.save();
+  ctx.translate(px + (goingLeft ? w : 0), pg.y);
+  if (goingLeft) ctx.scale(-1, 1);
+
+  // Tail
+  ctx.fillStyle = '#9090a8';
   ctx.beginPath();
-  if (wingUp) ctx.ellipse(w*0.35, -h*0.15, w*0.38, h*0.22, -0.4, 0, Math.PI*2);
-  else        ctx.ellipse(w*0.35,  h*0.55, w*0.38, h*0.22,  0.4, 0, Math.PI*2);
+  ctx.moveTo(w * 0.14, h * 0.42);
+  ctx.lineTo(w * -0.1, h * 0.56);
+  ctx.lineTo(w * 0.14, h * 0.68);
+  ctx.closePath();
   ctx.fill();
-  ctx.fillStyle = '#c0c0d0';
-  ctx.beginPath(); ctx.ellipse(w*0.42, h*0.52, w*0.36, h*0.3, 0.15, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#8899cc';
-  ctx.beginPath(); ctx.ellipse(w*0.68, h*0.38, w*0.14, h*0.18, 0, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#b0b0c0';
-  ctx.beginPath(); ctx.arc(w*0.8, h*0.28, w*0.18, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#ff6600';
-  ctx.beginPath(); ctx.arc(w*0.88, h*0.24, 3, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#000';
-  ctx.beginPath(); ctx.arc(w*0.88, h*0.24, 1.5, 0, Math.PI*2); ctx.fill();
-  ctx.fillStyle = '#888';
+
+  // Body
+  ctx.fillStyle = '#b8b8cc';
   ctx.beginPath();
-  ctx.moveTo(w*0.96, h*0.3); ctx.lineTo(w*1.08, h*0.34); ctx.lineTo(w*0.96, h*0.38);
-  ctx.closePath(); ctx.fill();
-  ctx.strokeStyle = '#aaa'; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(w*0.35, h*0.82); ctx.lineTo(w*0.28, h*1.0); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(w*0.5,  h*0.82); ctx.lineTo(w*0.55, h*1.0); ctx.stroke();
+  ctx.ellipse(w * 0.44, h * 0.52, w * 0.33, h * 0.25, 0.1, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Wing — rotates around the shoulder point on the body
+  ctx.save();
+  ctx.translate(w * 0.44, h * 0.32);
+  ctx.rotate(wingUp ? -0.65 : 0.45);
+  ctx.fillStyle = '#8a8aaa';
+  ctx.beginPath();
+  ctx.ellipse(0, h * 0.14, w * 0.35, h * 0.15, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Iridescent neck patch
+  ctx.fillStyle = '#8899cc';
+  ctx.beginPath();
+  ctx.ellipse(w * 0.66, h * 0.44, w * 0.11, h * 0.15, -0.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Head
+  ctx.fillStyle = '#c0c0d0';
+  ctx.beginPath();
+  ctx.arc(w * 0.78, h * 0.28, w * 0.15, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Eye
+  ctx.fillStyle = '#ff7700';
+  ctx.beginPath(); ctx.arc(w * 0.86, h * 0.23, 2.5, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#000';
+  ctx.beginPath(); ctx.arc(w * 0.86, h * 0.23, 1.4, 0, Math.PI * 2); ctx.fill();
+
+  // Beak (points right — gets flipped for left-flyers)
+  ctx.fillStyle = '#cc8800';
+  ctx.beginPath();
+  ctx.moveTo(w * 0.92, h * 0.25);
+  ctx.lineTo(w * 1.08, h * 0.29);
+  ctx.lineTo(w * 0.92, h * 0.33);
+  ctx.closePath();
+  ctx.fill();
+
+  // Legs
+  ctx.strokeStyle = '#cc8800'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(w * 0.38, h * 0.76); ctx.lineTo(w * 0.30, h * 1.0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(w * 0.52, h * 0.76); ctx.lineTo(w * 0.60, h * 1.0); ctx.stroke();
+
   ctx.restore();
 }
 
 export function drawPlayer() {
   if (player.invincible > 0 && Math.floor(player.invincible / 5) % 2 === 0) return;
 
-  const DW = 60, DH = 40;
+  const DW = 96, DH = 64;
+  const bounceY = gameState.celebrating ? -Math.abs(Math.sin(Date.now() / 200)) * 18 : 0;
   const px = player.x - gameState.cameraX + (player.w - DW) / 2;
-  const py = player.y + player.h - DH;
+  const py = player.y + player.h - DH + bounceY;
 
   if (media.playerImage) {
     let col, row;
-    if (!player.onGround) {
-      col = 1; row = 1; // jump
+    if (gameState.celebrating || !player.onGround) {
+      col = 1; row = 1; // jump frame
     } else if (player.vx < -0.5) {
       col = 0; row = 0; // walk left
     } else if (player.vx > 0.5) {
@@ -178,8 +219,8 @@ export function drawPlayer() {
   // Fallback hand-drawn character
   const bpx = player.x - gameState.cameraX;
   ctx.save();
-  if (player.facing === -1) { ctx.translate(bpx + player.w, player.y); ctx.scale(-1, 1); }
-  else ctx.translate(bpx, player.y);
+  if (player.facing === -1) { ctx.translate(bpx + player.w, player.y + bounceY); ctx.scale(-1, 1); }
+  else ctx.translate(bpx, player.y + bounceY);
   const lo = player.onGround ? (player.walkFrame === 0 ? 2 : -2) : 0;
   ctx.fillStyle = '#3a1800';
   ctx.fillRect(0+lo, 34, 13, 8); ctx.fillRect(19-lo, 34, 13, 8);
@@ -198,11 +239,11 @@ export function drawGirl() {
   const gx = gxWorld - gameState.cameraX;
   if (gx < -80 || gx > CANVAS_W + 10) return;
 
-  const DW = 52, DH = 78;
-  const py = 400 - DH;
+  const DW = 43, DH = 64;
+  const bounceY = gameState.celebrating ? -Math.abs(Math.sin(Date.now() / 200)) * 18 : 0;
+  const py = 400 - DH + bounceY;
 
   if (!media.girlImage) {
-    // Fallback flag
     ctx.fillStyle = '#aaa'; ctx.fillRect(gx, 200, 6, 200);
     ctx.fillStyle = '#e63c00';
     ctx.beginPath(); ctx.moveTo(gx+6,202); ctx.lineTo(gx+50,222); ctx.lineTo(gx+6,242); ctx.closePath(); ctx.fill();
@@ -213,7 +254,10 @@ export function drawGirl() {
   const FW = 418, FH = 627;
   let col, row;
   const s = gameState.girlState;
-  if (s === 'hearts') {
+  if (gameState.celebrating) {
+    // Alternate cheer-left / cheer-right while jumping together
+    col = Math.floor(Date.now() / 200) % 2; row = 1;
+  } else if (s === 'hearts') {
     col = 2; row = 1;
   } else if (s === 'cheer') {
     col = Math.floor(Date.now() / 220) % 2; row = 1;

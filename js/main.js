@@ -98,6 +98,31 @@ if (IS_TOUCH) {
   document.addEventListener('pointerdown', maybeStartBgMusic, { once: true });
 }
 
+// ── Action button (game-over / level-complete) ─────────────────────────────────
+const btnAction = document.getElementById('btn-action');
+
+function syncActionBtn() {
+  if (gameState.levelComplete) {
+    btnAction.textContent = 'NEXT LEVEL  ▶';
+    btnAction.classList.remove('hidden');
+  } else if (gameState.gameOver || gameState.gameWon) {
+    btnAction.textContent = 'PLAY AGAIN  ▶';
+    btnAction.classList.remove('hidden');
+  } else {
+    btnAction.classList.add('hidden');
+  }
+}
+
+btnAction.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  resumeAudio();
+  maybeStartBgMusic();
+  if (gameState.levelComplete) nextLevel();
+  else if (gameState.gameOver || gameState.gameWon) resetGame();
+  btnAction.classList.add('hidden');
+  syncUI();
+});
+
 // ── Restart / next-level button ────────────────────────────────────────────────
 document.getElementById('btn-restart').addEventListener('pointerdown', e => {
   e.preventDefault();
@@ -131,6 +156,7 @@ function loop() {
   if (gameState.quizActive)                    drawQuiz();
   if (gameState.levelComplete)                 drawLevelComplete();
   if (gameState.gameOver || gameState.gameWon) drawOverlay();
+  syncActionBtn();
   requestAnimationFrame(loop);
 }
 

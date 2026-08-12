@@ -49,7 +49,9 @@ export function resetGame() {
   gameState.coinCount    = 0;
   gameState.gameOver     = false;
   gameState.gameWon      = false;
-  gameState.girlState    = 'idle';
+  gameState.girlState        = 'idle';
+  gameState.celebrating      = false;
+  gameState.celebrationTimer = 0;
   gameState.levelComplete = false;
   gameState.currentLevel = 1;
   gameState.worldW       = 3200;
@@ -57,19 +59,23 @@ export function resetGame() {
   gameState.restartHeld  = false;
   gameState.pigeonTimer  = 0;
   gameState.pigeonTarget = 360;
+  gameState.jumpDown     = true;  // prevent auto-jump if Space held during restart
   clearQuiz();
   initLevel(1);
   resetPlayer();
 }
 
 export function nextLevel() {
-  gameState.levelComplete = false;
-  gameState.girlState     = 'idle';
+  gameState.levelComplete    = false;
+  gameState.girlState        = 'idle';
+  gameState.celebrating      = false;
+  gameState.celebrationTimer = 0;
   gameState.currentLevel  = 2;
   gameState.worldW        = 4700;
   gameState.restartHeld   = false;
   gameState.pigeonTimer   = 0;
   gameState.pigeonTarget  = 220;  // pigeons appear sooner in level 2
+  gameState.jumpDown      = true;
   clearQuiz();
   initLevel(2);
   resetPlayer();

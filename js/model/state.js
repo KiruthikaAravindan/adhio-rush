@@ -14,6 +14,8 @@ export const gameState = {
   currentLevel: 1,
   worldW: 3200,
   girlState: 'idle',   // 'idle' | 'cheer' | 'hearts'
+  celebrating: false,
+  celebrationTimer: 0,
   cameraX: 0,
   restartHeld: false,
   jumpDown: false,
