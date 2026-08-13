@@ -31,43 +31,49 @@ body.is-touch {
   background: #000;
 }
 
-/* ── Mini HUD — score + lives always visible ── */
-#mini-hud {
+/* ── Full HUD strip — always visible, all stats ── */
+#ui {
   position: absolute;
-  top: 0; left: 0;
+  top: 0; left: 0; right: 0;
   z-index: 5;
   display: flex;
   align-items: center;
-  gap: 20px;
-  padding: 8px 14px;
+  gap: 14px;
+  padding: 5px 12px;
+  background: rgba(0,0,0,0.38);
   color: #fff;
-  font-size: 15px;
+  font-size: 13px;
   font-weight: bold;
   letter-spacing: 1px;
   pointer-events: none;
-  text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.6);
+  white-space: nowrap;
 }
-#mini-hud span { display: flex; align-items: center; gap: 4px; }
-#mini-hud span span { color: #FFD700; min-width: 24px; }
+#ui > span {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+}
+#ui > span > span { color: #FFD700; min-width: 18px; }
 
-/* ── Hamburger menu button ── */
-#btn-menu {
-  position: absolute;
-  top: 6px; right: 6px;
-  z-index: 6;
-  width: 48px; height: 48px;
+/* Settings / hamburger button — right-aligned in the HUD strip */
+#btn-settings {
+  margin-left: auto;
+  pointer-events: all;
   background: rgba(255,255,255,0.12);
   border: 2px solid rgba(255,255,255,0.28);
   border-radius: 10px;
   color: rgba(255,255,255,0.9);
-  font-size: 22px;
+  font-size: 16px;
   cursor: pointer;
-  pointer-events: all;
+  width: 34px; height: 34px;
+  flex-shrink: 0;
   display: flex; align-items: center; justify-content: center;
   transition: background 0.1s;
 }
-#btn-menu:hover  { background: rgba(255,255,255,0.24); }
-#btn-menu:active { background: rgba(255,255,255,0.40); }
+#btn-settings:hover  { background: rgba(255,255,255,0.24); }
+#btn-settings:active { background: rgba(255,255,255,0.40); }
+
+body.is-touch #btn-settings { width: 44px; height: 44px; font-size: 20px; }
 
 /* ══════════════════════════════════════════════════════════════════
    MOBILE-ONLY UI — hidden by default, shown only on touch devices
@@ -272,8 +278,8 @@ body.is-touch #touch-controls {
 }
 #btn-action.hidden { display: none; }
 
-/* ── Combined HUD + settings panel ── */
-#hud-panel {
+/* ── Settings panel (centered overlay) ── */
+#settings-panel {
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
@@ -288,32 +294,32 @@ body.is-touch #touch-controls {
   font-family: 'Courier New', monospace;
   pointer-events: all;
 }
-#hud-panel.hidden { display: none; }
+#settings-panel.hidden { display: none; }
 
-/* Stats rows inside panel */
-.hud-stats {
-  margin-bottom: 4px;
+/* Mobile-only actions inside the settings panel */
+.mobile-menu-actions {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
 }
-.hud-stat-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 5px 0;
-  font-size: 14px;
+body.is-touch .mobile-menu-actions { display: flex; }
+
+.menu-action-btn {
+  background: rgba(255,255,255,0.08);
+  color: #ddd;
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
   letter-spacing: 1px;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
+  cursor: pointer;
+  transition: background 0.1s;
 }
-.hud-stat-row:last-child { border-bottom: none; }
-.stat-lbl { color: #ccc; }
-.stat-num { color: #FFD700; font-weight: bold; min-width: 40px; text-align: right; }
+.menu-action-btn:active { background: rgba(255,255,255,0.22); }
 
-.hud-divider {
-  height: 1px;
-  background: rgba(255,255,255,0.15);
-  margin: 10px 0;
-}
-
-#btn-menu-close {
+#btn-settings-close {
   margin-top: 14px;
   background: transparent;
   color: #888;
@@ -325,7 +331,7 @@ body.is-touch #touch-controls {
   cursor: pointer;
   transition: color 0.1s, border-color 0.1s;
 }
-#btn-menu-close:hover { color: #ccc; border-color: #665588; }
+#btn-settings-close:hover { color: #ccc; border-color: #665588; }
 
 .settings-title {
   font-size: 15px;

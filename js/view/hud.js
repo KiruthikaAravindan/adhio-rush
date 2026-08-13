@@ -6,13 +6,12 @@ import { coins } from '../model/level.js';
 export function syncUI() {
   const score = gameState.score;
   const best  = Math.max(gameState.bestScore, score);
-  document.getElementById('score').textContent      = score;
-  document.getElementById('score-mini').textContent = score;
-  document.getElementById('best').textContent       = best;
-  document.getElementById('lives').textContent      = gameState.lives;
-  document.getElementById('lives-mini').textContent = gameState.lives;
-  document.getElementById('coins').textContent      = gameState.coinCount;
-  document.getElementById('level').textContent      = gameState.currentLevel;
+  document.getElementById('score').textContent       = score;
+  document.getElementById('best').textContent        = best;
+  document.getElementById('lives').textContent       = gameState.lives;
+  document.getElementById('coins').textContent       = gameState.coinCount;
+  document.getElementById('coins-total').textContent = coins.length;
+  document.getElementById('level').textContent       = gameState.currentLevel;
 }
 
 export function drawLevelComplete() {
@@ -95,13 +94,15 @@ export function drawQuiz() {
 
   if (!gameState.quizAnswered) {
     ctx.fillStyle = '#aaa'; ctx.font = '13px Courier New';
-    ctx.fillText('◀ ▶ to choose   Space / Enter to confirm', CANVAS_W / 2, 268);
+    ctx.fillText('Tap or click an answer', CANVAS_W / 2, 268);
   } else {
     ctx.fillStyle = gameState.quizAnswerCorrect ? '#44ff77' : '#ff5555';
     ctx.font = 'bold 26px Courier New';
     ctx.fillText(
       gameState.quizAnswerCorrect ? '✓  Correct! +500 bonus points!' : '✗  Wrong answer!',
-      CANVAS_W / 2, 270
+      CANVAS_W / 2, 265
     );
+    ctx.fillStyle = '#888'; ctx.font = '14px Courier New';
+    ctx.fillText('Tap anywhere to continue', CANVAS_W / 2, 305);
   }
 }

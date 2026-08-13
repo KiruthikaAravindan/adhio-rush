@@ -74,3 +74,18 @@ export function burst(x, y, color, n = 8) {
     });
   }
 }
+
+export function burstHearts(x, y) {
+  for (let i = 0; i < 3; i++) {
+    const angle = -Math.PI / 2 + (Math.random() - 0.5) * Math.PI * 0.9;
+    const spd   = 1.5 + Math.random() * 2.5;
+    particles.push({
+      x, y,
+      vx: Math.cos(angle) * spd,
+      vy: Math.sin(angle) * spd - 1.5,
+      life: 1,
+      color: Math.random() < 0.5 ? '#ff4466' : '#ff99bb',
+      symbol: '♥',
+    });
+  }
+}

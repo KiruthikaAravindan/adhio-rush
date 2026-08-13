@@ -199,12 +199,14 @@ export function drawPlayer() {
   const DW = 96, DH = 64;
   const bounceY = gameState.celebrating ? -Math.abs(Math.sin(Date.now() / 200)) * 18 : 0;
   const px = player.x - gameState.cameraX + (player.w - DW) / 2;
-  const py = player.y + player.h - DH + bounceY + 6; // +6 aligns feet with ground
+  const py = player.y + player.h - DH + bounceY + 3; // +3 aligns feet; thin tiles need less sink than thick ground
 
   if (media.playerImage) {
     let col, row;
     if (gameState.celebrating) {
-      col = 1; row = 1; // jump frame
+      col = 2; row = 1; // hearts / together frame (6th image)
+    } else if (!player.onGround) {
+      col = 1; row = 1; // airborne / jump frame
     } else if (player.vx < -0.5) {
       col = 0; row = 0; // walk left
     } else if (player.vx > 0.5) {
@@ -271,8 +273,16 @@ export function drawParticles() {
   for (const p of particles) {
     ctx.save();
     ctx.globalAlpha = Math.max(0, p.life);
-    ctx.fillStyle = p.color;
-    ctx.beginPath(); ctx.arc(p.x - gameState.cameraX, p.y, 4, 0, Math.PI*2); ctx.fill();
+    if (p.symbol) {
+      ctx.fillStyle = p.color;
+      ctx.font = 'bold 18px Arial';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(p.symbol, p.x - gameState.cameraX, p.y);
+    } else {
+      ctx.fillStyle = p.color;
+      ctx.beginPath(); ctx.arc(p.x - gameState.cameraX, p.y, 4, 0, Math.PI * 2); ctx.fill();
+    }
     ctx.restore();
   }
 }

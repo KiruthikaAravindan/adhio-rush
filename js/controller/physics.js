@@ -74,7 +74,7 @@ export function nextLevel() {
   gameState.worldW        = 4700;
   gameState.restartHeld   = false;
   gameState.pigeonTimer   = 0;
-  gameState.pigeonTarget  = 220;  // pigeons appear sooner in level 2
+  gameState.pigeonTarget  = 350;  // pigeons appear less often in level 2
   gameState.jumpDown      = true;
   clearQuiz();
   initLevel(2);

@@ -1,6 +1,6 @@
 import { canvas, ctx } from './canvas.js';
 import { CANVAS_W, CANVAS_H } from './constants.js';
-import { resumeAudio, startBgMusic, setBgMusicMuted } from './audio.js';
+import { resumeAudio, startBgMusic, setBgMusicMuted, SFX } from './audio.js';
 import { settings, saveSettings } from './model/settings.js';
 import { gameState, media } from './model/state.js';
 import { platforms, coins, enemies, prizeBoxes, pigeons } from './model/level.js';
@@ -18,7 +18,7 @@ const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches;
 if (IS_TOUCH) document.body.classList.add('is-touch');
 
 gameState.speedScale = IS_TOUCH ? 0.62 : 1;
-gameState.jumpScale  = 1;
+gameState.jumpScale  = IS_TOUCH ? 1.1 : 1;
 
 // ── Responsive scaling ─────────────────────────────────────────────────────────
 const gameWrap = document.getElementById('game-wrap');
@@ -34,8 +34,6 @@ window.addEventListener('orientationchange', () => setTimeout(resizeGame, 120));
 document.addEventListener('fullscreenchange',       () => setTimeout(resizeGame, 120));
 document.addEventListener('webkitfullscreenchange', () => setTimeout(resizeGame, 120));
 resizeGame();
-
-// ── Sprite loading — deferred below via Promise.all ────────────────────────────
 
 // ── Fullscreen ─────────────────────────────────────────────────────────────────
 function fsElement() { return document.fullscreenElement || document.webkitFullscreenElement; }
@@ -60,7 +58,7 @@ function exitFullscreen() {
 }
 function toggleFullscreen() { fsElement() ? exitFullscreen() : enterFullscreen(); }
 
-// ── Background music — start once on first user interaction ───────────────────
+// ── Background music ───────────────────────────────────────────────────────────
 let bgStarted = false;
 function maybeStartBgMusic() {
   if (bgStarted) return;
@@ -90,13 +88,65 @@ document.getElementById('btn-start').addEventListener('click', () => {
   canvas.focus();
 });
 
+if (!IS_TOUCH) {
+  document.addEventListener('keydown', maybeStartBgMusic, { once: true });
+}
+
+// ── Settings button: ⚙ on desktop, ☰ on mobile ────────────────────────────────
+const btnSettings    = document.getElementById('btn-settings');
+const settingsPanel  = document.getElementById('settings-panel');
+const togMusic       = document.getElementById('tog-music');
+const togSfx         = document.getElementById('tog-sfx');
+
+if (IS_TOUCH) btnSettings.textContent = '☰';
+
+function syncSettingsUI() {
+  togMusic.textContent = settings.music ? 'ON' : 'OFF';
+  togMusic.classList.toggle('off', !settings.music);
+  togSfx.textContent = settings.sfx ? 'ON' : 'OFF';
+  togSfx.classList.toggle('off', !settings.sfx);
+}
+syncSettingsUI();
+
+btnSettings.addEventListener('click', () => {
+  syncSettingsUI();
+  settingsPanel.classList.toggle('hidden');
+});
+document.getElementById('btn-settings-close').addEventListener('click', () => {
+  settingsPanel.classList.add('hidden');
+});
+// Close panel when clicking the canvas
+canvas.addEventListener('click', () => settingsPanel.classList.add('hidden'));
+
+togMusic.addEventListener('click', () => {
+  settings.music = !settings.music;
+  saveSettings();
+  syncSettingsUI();
+  setBgMusicMuted(gameState.quizActive || gameState.gameOver ||
+                  gameState.gameWon    || gameState.levelComplete);
+});
+togSfx.addEventListener('click', () => {
+  settings.sfx = !settings.sfx;
+  saveSettings();
+  syncSettingsUI();
+});
+
+// ── Mobile-only panel actions ──────────────────────────────────────────────────
 if (IS_TOUCH) {
-  document.getElementById('btn-fs').addEventListener('pointerdown', e => {
+  document.getElementById('btn-panel-fs').addEventListener('pointerdown', e => {
     e.preventDefault();
+    settingsPanel.classList.add('hidden');
     toggleFullscreen();
   });
-} else {
-  document.addEventListener('keydown', maybeStartBgMusic, { once: true });
+  document.getElementById('btn-panel-restart').addEventListener('pointerdown', e => {
+    e.preventDefault();
+    settingsPanel.classList.add('hidden');
+    resumeAudio();
+    maybeStartBgMusic();
+    if (gameState.levelComplete) nextLevel();
+    else resetGame();
+    syncUI();
+  });
 }
 
 // ── Action button (game-over / level-complete) ─────────────────────────────────
@@ -124,58 +174,45 @@ btnAction.addEventListener('pointerdown', e => {
   syncUI();
 });
 
-// ── Restart / next-level button ────────────────────────────────────────────────
-document.getElementById('btn-restart').addEventListener('pointerdown', e => {
-  e.preventDefault();
-  resumeAudio();
-  maybeStartBgMusic();
-  if (gameState.levelComplete) nextLevel();
-  else resetGame();
-  syncUI();
-});
+// ── Quiz: canvas click/tap to select answers ───────────────────────────────────
+canvas.addEventListener('pointerdown', e => {
+  if (!gameState.quizActive) return;
+  // Don't propagate to the settings-panel close handler
+  e.stopPropagation();
 
-// ── Hamburger menu panel ───────────────────────────────────────────────────────
-const hudPanel  = document.getElementById('hud-panel');
-const togMusic  = document.getElementById('tog-music');
-const togSfx    = document.getElementById('tog-sfx');
+  const rect   = canvas.getBoundingClientRect();
+  const scaleX = CANVAS_W / rect.width;
+  const scaleY = CANVAS_H / rect.height;
+  const cx = (e.clientX - rect.left) * scaleX;
+  const cy = (e.clientY - rect.top)  * scaleY;
 
-function syncSettingsUI() {
-  togMusic.textContent = settings.music ? 'ON' : 'OFF';
-  togMusic.classList.toggle('off', !settings.music);
-  togSfx.textContent = settings.sfx ? 'ON' : 'OFF';
-  togSfx.classList.toggle('off', !settings.sfx);
-}
-syncSettingsUI();
+  if (gameState.quizAnswered) {
+    // Tap anywhere to dismiss the result early
+    gameState.quizActive = false;
+    gameState.quizData   = null;
+    return;
+  }
 
-document.getElementById('btn-menu').addEventListener('click', () => {
-  syncSettingsUI();
-  hudPanel.classList.toggle('hidden');
-});
-document.getElementById('btn-menu-close').addEventListener('click', () => {
-  hudPanel.classList.add('hidden');
-});
-// Close panel when clicking outside it
-document.getElementById('gameCanvas').addEventListener('click', () => {
-  hudPanel.classList.add('hidden');
-});
-togMusic.addEventListener('click', () => {
-  settings.music = !settings.music;
-  saveSettings();
-  syncSettingsUI();
-  setBgMusicMuted(gameState.quizActive || gameState.gameOver ||
-                  gameState.gameWon    || gameState.levelComplete);
-});
-togSfx.addEventListener('click', () => {
-  settings.sfx = !settings.sfx;
-  saveSettings();
-  syncSettingsUI();
+  // Check which answer box was tapped/clicked
+  const choices = gameState.quizData.choices;
+  for (let i = 0; i < choices.length; i++) {
+    const bx = 60 + i * 240, by = 180, bw = 220, bh = 52;
+    if (cx >= bx && cx <= bx + bw && cy >= by && cy <= by + bh) {
+      gameState.quizSelected      = i;
+      gameState.quizAnswered      = true;
+      gameState.quizAnswerCorrect = i === gameState.quizData.answer;
+      if (gameState.quizAnswerCorrect) { gameState.score += 500; SFX.quizOk(); }
+      else SFX.quizBad();
+      gameState.quizTimer = 90;  // fallback auto-dismiss after ~1.5 s
+      break;
+    }
+  }
 });
 
 // ── Game loop ──────────────────────────────────────────────────────────────────
 function loop() {
   update();
 
-  // Mute bg music during quiz / pause states; unmute during active play
   const muteMusic = gameState.quizActive || gameState.gameOver ||
                     gameState.gameWon    || gameState.levelComplete;
   setBgMusicMuted(muteMusic);

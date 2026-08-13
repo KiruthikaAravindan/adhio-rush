@@ -1,8 +1,8 @@
 import { GRAVITY, CANVAS_W } from '../constants.js';
-import { gameState, player, particles, burst, commitBestScore } from '../model/state.js';
+import { gameState, player, particles, burst, burstHearts, commitBestScore } from '../model/state.js';
 import { coins, enemies, prizeBoxes, pigeons, QUIZ_QUESTIONS } from '../model/level.js';
 import { SFX } from '../audio.js';
-import { keys, isJump, isLeft, isRight, isRestart } from './input.js';
+import { isJump, isLeft, isRight, isRestart } from './input.js';
 import { overlap, resolveVsWorld, resetPlayer, resetGame, nextLevel } from './physics.js';
 
 const SPEED = 5.5;
@@ -32,6 +32,11 @@ export function update() {
     player.y += player.vy;
     resolveVsWorld();
     gameState.celebrationTimer--;
+    // Emit floating hearts between the characters
+    if (gameState.celebrationTimer % 18 === 0) {
+      const midX = gameState.worldW - 155;
+      burstHearts(midX, 355);
+    }
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
       p.x += p.vx; p.y += p.vy; p.vy += 0.3; p.life -= 0.045;
@@ -50,25 +55,9 @@ export function update() {
     return;
   }
 
-  // ── Quiz overlay (pauses everything else) ────────────────────────────────────
+  // ── Quiz overlay (pauses everything else) — answered by canvas click in main.js ──
   if (gameState.quizActive) {
-    if (!gameState.quizAnswered) {
-      const navL  = isLeft();
-      const navR  = isRight();
-      const navOk = isJump() || keys['Enter'];
-      if (navL  && !gameState.quizNavL)  gameState.quizSelected = (gameState.quizSelected + 2) % 3;
-      if (navR  && !gameState.quizNavR)  gameState.quizSelected = (gameState.quizSelected + 1) % 3;
-      if (navOk && !gameState.quizNavOk) {
-        gameState.quizAnswered      = true;
-        gameState.quizAnswerCorrect = gameState.quizSelected === gameState.quizData.answer;
-        if (gameState.quizAnswerCorrect) { gameState.score += 500; SFX.quizOk(); }
-        else SFX.quizBad();
-        gameState.quizTimer = 140;
-      }
-      gameState.quizNavL  = navL;
-      gameState.quizNavR  = navR;
-      gameState.quizNavOk = navOk;
-    } else {
+    if (gameState.quizAnswered) {
       gameState.quizTimer--;
       if (gameState.quizTimer <= 0) { gameState.quizActive = false; gameState.quizData = null; }
     }
@@ -136,12 +125,12 @@ export function update() {
     gameState.pigeonTimer++;
     if (gameState.pigeonTimer >= gameState.pigeonTarget) {
       gameState.pigeonTimer  = 0;
-      gameState.pigeonTarget = 200 + Math.floor(Math.random() * 180);
-    if (pigeons.length < 2) {
+      gameState.pigeonTarget = 300 + Math.floor(Math.random() * 200);
+    if (pigeons.length < 1) {
       const fromLeft = Math.random() < 0.5;
       pigeons.push({
         x: fromLeft ? gameState.cameraX - 60 : gameState.cameraX + CANVAS_W + 20,
-        y: 180 + Math.floor(Math.random() * 160),
+        y: 80 + Math.floor(Math.random() * 130),
         w: 36, h: 28,
         vx: fromLeft ? 3.0 : -3.0,
         wingFrame: 0, wingTimer: 0,
@@ -197,6 +186,18 @@ export function update() {
     }
   }
 
+  // Prevent enemies visually overlapping each other
+  for (let i = 0; i < enemies.length; i++) {
+    if (!enemies[i].alive) continue;
+    for (let j = i + 1; j < enemies.length; j++) {
+      if (!enemies[j].alive) continue;
+      if (overlap(enemies[i], enemies[j])) {
+        enemies[i].vx *= -1;
+        enemies[j].vx *= -1;
+      }
+    }
+  }
+
   // ── Player animation ──────────────────────────────────────────────────────────
   if (Math.abs(player.vx) > 0.5) {
     player.walkTimer++;
@@ -221,15 +222,14 @@ export function update() {
     gameState.girlState = 'cheer';
   }
 
-  // ── Win trigger — start celebration when player touches girl ──────────────────
-  const girlHitBox = { x: gameState.worldW - 118, y: 336, w: 43, h: 64 };
-  if (!gameState.celebrating && overlap(player, girlHitBox)) {
+  // ── Win trigger — celebrate when player reaches girl with a visible gap ─────────
+  if (!gameState.celebrating && player.x + player.w > gameState.worldW - 195) {
     gameState.girlState        = 'hearts';
     gameState.celebrating      = true;
-    gameState.celebrationTimer = 180;   // ~3 s at 60 fps
+    gameState.celebrationTimer = 180;
     player.vx    = 0;
     player.facing = 1;
-    burst(gameState.worldW - 96, 360, '#ff66cc', 16);
-    burst(gameState.worldW - 96, 360, '#FFD700', 12);
+    burst(gameState.worldW - 155, 360, '#ff66cc', 16);
+    burst(gameState.worldW - 155, 360, '#FFD700', 12);
   }
 }

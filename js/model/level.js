@@ -23,7 +23,7 @@ export const QUIZ_QUESTIONS = [
 ];
 
 // ── Helper: build a prize box anchored above a platform ──────────────────────
-const BOX_W = 36, BOX_H = 36, BOX_GAP = 70;
+const BOX_W = 26, BOX_H = 26, BOX_GAP = 70;
 function mkBox(platforms, hostIdx, qi) {
   const p = platforms[hostIdx];
   return { x: Math.round(p.x + p.w / 2 - BOX_W / 2), y: p.y - BOX_GAP - BOX_H, w: BOX_W, h: BOX_H, hit: false, qi };
@@ -102,7 +102,7 @@ const L1_ENEMY_DEFS = [
 ];
 
 // Prize boxes: platform indices 6, 9, 12, 15, 18 — qi 0-4
-const L1_BOX_DEFS = [[6,0],[9,1],[12,2],[15,3],[18,4]];
+const L1_BOX_DEFS = [[6],[9],[12],[15],[18]];
 
 // ── Level 2 ───────────────────────────────────────────────────────────────────
 const L2_PLATFORMS = [
@@ -193,7 +193,7 @@ const L2_ENEMY_DEFS = [
 ];
 
 // Prize boxes: platform indices 10, 13, 17, 20, 25 — qi 5-9
-const L2_BOX_DEFS = [[10,5],[13,6],[17,7],[20,8],[25,9]];
+const L2_BOX_DEFS = [[10],[13],[17],[20],[25]];
 
 // ── Mutable exports (populated by initLevel) ──────────────────────────────────
 export const platforms  = [];
@@ -214,6 +214,13 @@ export function initLevel(n) {
   const ed = n === 1 ? L1_ENEMY_DEFS : L2_ENEMY_DEFS;
   const bd = n === 1 ? L1_BOX_DEFS   : L2_BOX_DEFS;
 
+  // Shuffle the quiz question pool for this level so questions appear in random order
+  const qiPool = n === 1 ? [0, 1, 2, 3, 4] : [5, 6, 7, 8, 9];
+  for (let i = qiPool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [qiPool[i], qiPool[j]] = [qiPool[j], qiPool[i]];
+  }
+
   platforms.push(...pd);
   cd.forEach(([x, y], i) => coins.push({
     x, y, w: 16, h: 16, collected: false,
@@ -226,7 +233,7 @@ export function initLevel(n) {
     left: l, right: r,
     walkFrame: 0, walkTimer: 0,
   }));
-  bd.forEach(([hi, qi]) => prizeBoxes.push(mkBox(platforms, hi, qi)));
+  bd.forEach(([hi], idx) => prizeBoxes.push(mkBox(platforms, hi, qiPool[idx])));
 }
 
 // Seed level 1 on module load so all importing modules get valid arrays immediately
