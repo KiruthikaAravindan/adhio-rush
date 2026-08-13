@@ -1,6 +1,6 @@
 import { ctx } from '../canvas.js';
 import { CANVAS_W, CANVAS_H } from '../constants.js';
-import { gameState, player, particles, media } from '../model/state.js';
+import { gameState, player, particles, media, caesar } from '../model/state.js';
 import { platforms, coins, enemies, prizeBoxes, pigeons } from '../model/level.js';
 const NOTE_SYMBOLS  = ['♪', '♩', '♫', '♬'];
 const NOTE_COLORS   = ['#ee66ff', '#44ddff', '#ffdd44', '#66ff99'];
@@ -204,12 +204,26 @@ export function drawPigeon(pg) {
   const wingUp    = pg.wingFrame === 0;
   const goingLeft = pg.vx < 0;
 
+  // Danger pigeon: vivid red; regular: warm brown
+  const d = pg.isDanger;
+  const C = {
+    tail:  d ? '#991100' : '#a07848',
+    body:  d ? '#cc2200' : '#c8a87c',
+    wing:  d ? '#881100' : '#a07840',
+    neck:  d ? '#ff4422' : '#dd7744',
+    head:  d ? '#cc1100' : '#d4b888',
+    eye:   d ? '#ffee00' : '#ff9900',
+    beak:  d ? '#aa6600' : '#cc7700',
+    legs:  d ? '#cc4400' : '#cc7700',
+  };
+
   ctx.save();
+  if (d) { ctx.shadowColor = '#ff2200'; ctx.shadowBlur = 10; }
   ctx.translate(px + (goingLeft ? w : 0), pg.y);
   if (goingLeft) ctx.scale(-1, 1);
 
   // Tail
-  ctx.fillStyle = '#a07848';
+  ctx.fillStyle = C.tail;
   ctx.beginPath();
   ctx.moveTo(w * 0.14, h * 0.42);
   ctx.lineTo(w * -0.1, h * 0.56);
@@ -218,7 +232,8 @@ export function drawPigeon(pg) {
   ctx.fill();
 
   // Body
-  ctx.fillStyle = '#c8a87c';
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = C.body;
   ctx.beginPath();
   ctx.ellipse(w * 0.44, h * 0.52, w * 0.33, h * 0.25, 0.1, 0, Math.PI * 2);
   ctx.fill();
@@ -227,32 +242,32 @@ export function drawPigeon(pg) {
   ctx.save();
   ctx.translate(w * 0.44, h * 0.32);
   ctx.rotate(wingUp ? -0.65 : 0.45);
-  ctx.fillStyle = '#a07840';
+  ctx.fillStyle = C.wing;
   ctx.beginPath();
   ctx.ellipse(0, h * 0.14, w * 0.35, h * 0.15, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 
-  // Iridescent neck patch
-  ctx.fillStyle = '#dd7744';
+  // Neck patch
+  ctx.fillStyle = C.neck;
   ctx.beginPath();
   ctx.ellipse(w * 0.66, h * 0.44, w * 0.11, h * 0.15, -0.2, 0, Math.PI * 2);
   ctx.fill();
 
   // Head
-  ctx.fillStyle = '#d4b888';
+  ctx.fillStyle = C.head;
   ctx.beginPath();
   ctx.arc(w * 0.78, h * 0.28, w * 0.15, 0, Math.PI * 2);
   ctx.fill();
 
   // Eye
-  ctx.fillStyle = '#ff9900';
+  ctx.fillStyle = C.eye;
   ctx.beginPath(); ctx.arc(w * 0.86, h * 0.23, 2.5, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#000';
   ctx.beginPath(); ctx.arc(w * 0.86, h * 0.23, 1.4, 0, Math.PI * 2); ctx.fill();
 
   // Beak
-  ctx.fillStyle = '#cc7700';
+  ctx.fillStyle = C.beak;
   ctx.beginPath();
   ctx.moveTo(w * 0.92, h * 0.25);
   ctx.lineTo(w * 1.08, h * 0.29);
@@ -260,10 +275,14 @@ export function drawPigeon(pg) {
   ctx.closePath();
   ctx.fill();
 
-  // Legs
-  ctx.strokeStyle = '#cc7700'; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(w * 0.38, h * 0.76); ctx.lineTo(w * 0.30, h * 1.0); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(w * 0.52, h * 0.76); ctx.lineTo(w * 0.60, h * 1.0); ctx.stroke();
+  // Legs — short & tucked (realistic flying posture)
+  ctx.strokeStyle = C.legs; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(w * 0.38, h * 0.76); ctx.lineTo(w * 0.33, h * 0.88); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(w * 0.52, h * 0.76); ctx.lineTo(w * 0.57, h * 0.88); ctx.stroke();
+  // Tiny toes
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(w * 0.24, h * 0.88); ctx.lineTo(w * 0.40, h * 0.88); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(w * 0.48, h * 0.88); ctx.lineTo(w * 0.65, h * 0.88); ctx.stroke();
 
   ctx.restore();
 }
@@ -277,10 +296,29 @@ export function drawPlayer() {
   const dw = isAirborne ? 108 : DW;
   const dh = isAirborne ? 72  : DH;
   const bounceY = gameState.celebrating ? -Math.abs(Math.sin(Date.now() / 200)) * 18 : 0;
-  const px = player.x - gameState.cameraX + (player.w - dw) / 2;
-  const py = player.y + player.h - dh + bounceY + 3;
+  // +8 aligns sprite feet with hitbox bottom; +6 corrects jump-frame's left bias in sheet
+  const px = player.x - gameState.cameraX + (player.w - dw) / 2 + (isAirborne ? 6 : 0);
+  const py = player.y + player.h - dh + bounceY + 8;
 
   if (media.playerImage) {
+    // Speed streaks — drawn behind player when Allegro powerup is active
+    if (gameState.speedMult > 1 && Math.abs(player.vx) > 0.5) {
+      const movingRight = player.vx > 0;
+      const dir = movingRight ? -1 : 1;
+      const sx  = movingRight ? px - 4 : px + dw + 4;
+      ctx.save();
+      const streakColors = ['#44ddff', '#88eeff', '#aaeeff'];
+      for (let i = 0; i < 3; i++) {
+        ctx.globalAlpha = 0.5 - i * 0.12;
+        ctx.strokeStyle = streakColors[i];
+        ctx.lineWidth   = 2 - i * 0.4;
+        const sy  = py + dh * 0.35 + i * (dh * 0.15);
+        const len = 18 - i * 4;
+        ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + dir * len, sy); ctx.stroke();
+      }
+      ctx.restore();
+    }
+
     let col, row;
     if (gameState.celebrating) {
       col = 0; row = 1; // idle frame — col=2 doesn't exist in the 2-column sheet
@@ -362,6 +400,152 @@ export function drawParticles() {
       ctx.fillStyle = p.color;
       ctx.beginPath(); ctx.arc(p.x - gameState.cameraX, p.y, 4, 0, Math.PI * 2); ctx.fill();
     }
+    ctx.restore();
+  }
+}
+
+export function drawCaesar() {
+  if (!caesar.active) return;
+  const cx = caesar.x - gameState.cameraX;
+  if (cx + caesar.w < -10 || cx > CANVAS_W + 10) return;
+
+  const w = caesar.w, h = caesar.h;
+  const flip = caesar.facing === -1;
+
+  ctx.save();
+  ctx.translate(cx + (flip ? w : 0), caesar.y);
+  if (flip) ctx.scale(-1, 1);
+
+  // ── Tail — fluffy curved ──
+  ctx.strokeStyle = '#b86010'; ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(w * 0.08, h * 0.55);
+  ctx.bezierCurveTo(w * -0.35, h * 0.30, w * -0.55, h * -0.10, w * -0.20, h * -0.28);
+  ctx.stroke();
+  ctx.strokeStyle = '#e07820'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(w * 0.08, h * 0.55);
+  ctx.bezierCurveTo(w * -0.35, h * 0.30, w * -0.55, h * -0.10, w * -0.20, h * -0.28);
+  ctx.stroke();
+
+  // ── Body — fat fluffy orange ellipse ──
+  ctx.fillStyle = '#e08830';
+  ctx.beginPath();
+  ctx.ellipse(w * 0.50, h * 0.58, w * 0.44, h * 0.40, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ── Belly (lighter) ──
+  ctx.fillStyle = '#f5c880';
+  ctx.beginPath();
+  ctx.ellipse(w * 0.52, h * 0.64, w * 0.24, h * 0.26, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // ── Mackerel tabby stripes on body ──
+  ctx.strokeStyle = '#8b4400'; ctx.lineWidth = 1.5;
+  for (const sx of [0.26, 0.42, 0.62, 0.76]) {
+    ctx.globalAlpha = 0.45;
+    ctx.beginPath();
+    ctx.moveTo(w * sx, h * 0.20);
+    ctx.lineTo(w * (sx - 0.05), h * 0.80);
+    ctx.stroke();
+  }
+  ctx.globalAlpha = 1.0;
+
+  // ── Ears ──
+  ctx.fillStyle = '#e08830';
+  ctx.beginPath(); ctx.moveTo(w*0.60,h*0.08); ctx.lineTo(w*0.52,h*-0.14); ctx.lineTo(w*0.72,h*0.04); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(w*0.84,h*0.04); ctx.lineTo(w*0.94,h*-0.12); ctx.lineTo(w*0.97,h*0.08); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = '#ffaaaa';
+  ctx.beginPath(); ctx.moveTo(w*0.62,h*0.07); ctx.lineTo(w*0.55,h*-0.07); ctx.lineTo(w*0.71,h*0.05); ctx.closePath(); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(w*0.85,h*0.05); ctx.lineTo(w*0.92,h*-0.06); ctx.lineTo(w*0.95,h*0.07); ctx.closePath(); ctx.fill();
+
+  // ── Head ──
+  ctx.fillStyle = '#e08830';
+  ctx.beginPath(); ctx.arc(w * 0.76, h * 0.28, w * 0.27, 0, Math.PI * 2); ctx.fill();
+
+  // ── Forehead stripes ──
+  ctx.strokeStyle = '#8b4400'; ctx.lineWidth = 1;
+  ctx.globalAlpha = 0.4;
+  for (const ox of [-0.05, 0.05]) {
+    ctx.beginPath(); ctx.moveTo(w*(0.76+ox), h*0.02); ctx.lineTo(w*(0.76+ox*0.6), h*0.16); ctx.stroke();
+  }
+  ctx.globalAlpha = 1.0;
+
+  // ── Eyes ──
+  if (caesar.petTimer > 0) {
+    // Happy closed arcs when being petted
+    ctx.strokeStyle = '#332200'; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.arc(w*0.68, h*0.26, 4.5, Math.PI, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(w*0.86, h*0.26, 4.5, Math.PI, Math.PI*2); ctx.stroke();
+  } else if (caesar.sleeping) {
+    ctx.strokeStyle = '#332200'; ctx.lineWidth = 1.8;
+    ctx.beginPath(); ctx.moveTo(w*0.63,h*0.26); ctx.lineTo(w*0.73,h*0.26); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(w*0.81,h*0.26); ctx.lineTo(w*0.91,h*0.26); ctx.stroke();
+  } else {
+    ctx.fillStyle = '#c86010';
+    ctx.beginPath(); ctx.arc(w*0.68, h*0.26, 4.5, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(w*0.86, h*0.26, 4.5, 0, Math.PI*2); ctx.fill();
+    ctx.fillStyle = '#3a1a00';
+    ctx.beginPath(); ctx.arc(w*0.68, h*0.26, 2.2, 0, Math.PI*2); ctx.fill();
+    ctx.beginPath(); ctx.arc(w*0.86, h*0.26, 2.2, 0, Math.PI*2); ctx.fill();
+  }
+
+  // ── Nose ──
+  ctx.fillStyle = '#ff8888';
+  ctx.beginPath(); ctx.arc(w*0.77, h*0.33, 2.2, 0, Math.PI*2); ctx.fill();
+
+  // ── Whiskers ──
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.8; ctx.globalAlpha = 0.75;
+  ctx.beginPath(); ctx.moveTo(w*0.72,h*0.33); ctx.lineTo(w*0.48,h*0.31); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(w*0.72,h*0.36); ctx.lineTo(w*0.48,h*0.38); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(w*0.82,h*0.33); ctx.lineTo(w*1.04,h*0.31); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(w*0.82,h*0.36); ctx.lineTo(w*1.04,h*0.38); ctx.stroke();
+  ctx.globalAlpha = 1.0;
+
+  // ── Paws (walking animation) ──
+  const swing = caesar.walkFrame === 0 ? 2 : -2;
+  ctx.fillStyle = '#e08830';
+  ctx.beginPath(); ctx.ellipse(w*0.28+swing, h*0.98, 8, 5, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(w*0.58-swing, h*0.98, 8, 5, 0, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#f5c880';
+  ctx.beginPath(); ctx.ellipse(w*0.28+swing, h*0.99, 5, 3, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(w*0.58-swing, h*0.99, 5, 3, 0, 0, Math.PI*2); ctx.fill();
+
+  ctx.restore();
+
+  // ── Sleeping zzz ──
+  if (caesar.sleeping) {
+    const t = Date.now();
+    const zx = cx + (flip ? -6 : w + 6);
+    const zy = caesar.y - 8 + Math.sin(t / 500) * 2;
+    ctx.save();
+    ctx.fillStyle = '#aaeeff'; ctx.font = 'bold 9px Arial';
+    ctx.textAlign = flip ? 'right' : 'left';
+    ctx.fillText('z',  zx,       zy);
+    ctx.fillText('z',  zx + (flip ? -5 : 5),  zy - 6);
+    ctx.fillText('Z',  zx + (flip ? -11: 11), zy - 13);
+    ctx.restore();
+  }
+
+  // ── Petting hearts ──
+  if (caesar.petTimer > 0) {
+    const t = Date.now();
+    const hx = cx + w / 2;
+    const hy = caesar.y - 14 + Math.sin(t / 180) * 3;
+    ctx.save();
+    ctx.font = 'bold 13px Arial'; ctx.textAlign = 'center';
+    ctx.fillText('💛', hx, hy);
+    ctx.restore();
+  }
+
+  // ── Active catch glow ring ──
+  if (caesar.catchTimer > 0 && !caesar.sleeping) {
+    const pct = caesar.catchTimer / 600;
+    ctx.save();
+    ctx.globalAlpha = pct * 0.22;
+    ctx.strokeStyle = '#ff9900'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cx + w/2, caesar.y + h/2, 140, 0, Math.PI*2); ctx.stroke();
+    ctx.globalAlpha = 1;
     ctx.restore();
   }
 }

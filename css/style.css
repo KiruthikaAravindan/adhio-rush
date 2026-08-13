@@ -48,11 +48,14 @@ body.is-touch {
   letter-spacing: 1px;
   pointer-events: none;
   white-space: nowrap;
+  line-height: 1;
 }
 #ui > span {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 3px;
+  white-space: nowrap;
+  line-height: 1;
 }
 #ui > span > span { color: #FFD700; min-width: 18px; }
 
@@ -364,3 +367,20 @@ body.is-touch .mobile-menu-actions { display: flex; }
   transition: background 0.1s, border-color 0.1s;
 }
 .tog-btn.off { background: #661a1a; border-color: #aa4444; }
+
+/* ── Dev level-jump buttons ── */
+.level-btns { display: flex; gap: 6px; }
+.level-btn {
+  background: #1a1a4a;
+  color: #aef;
+  border: 1px solid #334477;
+  border-radius: 6px;
+  padding: 4px 14px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.level-btn:hover  { background: #2a2a6a; }
+.level-btn.active { background: #3a1a6a; border-color: #9966ff; color: #fff; }

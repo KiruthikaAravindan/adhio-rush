@@ -14,6 +14,33 @@ export function syncUI() {
 }
 
 // Kill-score progress bar — thin strip drawn on canvas just below the HUD strip
+export function drawPowerupHud() {
+  if (!gameState.powerupActive) return;
+  const pct  = Math.max(0, gameState.powerupTimer / 300);
+  const barW = 130;
+  const cx   = CANVAS_W / 2;
+  const cy   = 52;
+
+  ctx.save();
+  ctx.fillStyle = 'rgba(8,28,72,0.84)';
+  ctx.fillRect(cx - barW / 2 - 10, cy - 15, barW + 20, 28);
+  ctx.strokeStyle = '#44ddff';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(cx - barW / 2 - 10, cy - 15, barW + 20, 28);
+
+  ctx.fillStyle = '#44ddff';
+  ctx.font = 'bold 12px Courier New';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText('♫  ALLEGRO  ♫', cx, cy - 4);
+
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(cx - barW / 2, cy + 7, barW, 3);
+  ctx.fillStyle = '#44ddff';
+  ctx.fillRect(cx - barW / 2, cy + 7, barW * pct, 3);
+  ctx.restore();
+}
+
 export function drawKillBar() {
   if (gameState.killScore === 0 && gameState.killBarFlash === 0) return;
   const pct  = Math.min(1, gameState.killScore / gameState.killThreshold);
@@ -35,11 +62,12 @@ export function drawLevelComplete() {
   ctx.textAlign = 'center';
   const cy = CANVAS_H / 2;
 
+  const n = gameState.currentLevel;
   ctx.fillStyle = '#ee66ff'; ctx.font = 'bold 66px Courier New';
-  ctx.fillText('LEVEL 1 CLEAR!', CANVAS_W / 2, cy - 52);
+  ctx.fillText(`LEVEL ${n} CLEAR!`, CANVAS_W / 2, cy - 52);
 
   ctx.fillStyle = '#FFD700'; ctx.font = 'bold 26px Courier New';
-  ctx.fillText('★  Level 2 awaits...  ★', CANVAS_W / 2, cy + 4);
+  ctx.fillText(`★  Level ${n + 1} awaits...  ★`, CANVAS_W / 2, cy + 4);
 
   ctx.fillStyle = '#fff'; ctx.font = '24px Courier New';
   ctx.fillText(`Score so far: ${gameState.score}`, CANVAS_W / 2, cy + 44);

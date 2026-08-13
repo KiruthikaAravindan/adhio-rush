@@ -71,13 +71,13 @@ const L1_COIN_DEFS = [
   [2320,155],[2360,155],[2400,155],       // above [16]
   [2615,275],[2655,275],                  // above [17]
   [2820,215],[2860,215],                  // above [18]
-  [3020,155],[3060,155],[3100,155],       // above [19]
+  // [platform 19 coins removed — within win-zone proximity]
   // Ground-level notes — harder to grab (enemies share the ground)
   [130,375],[330,375],                    // ground [0]
   [730,375],[960,375],                    // ground [1]
   [1360,375],[1560,375],                  // ground [2]
   [1890,375],[2070,375],                  // ground [3]
-  [2570,375],[2760,375],[2980,375],       // ground [4]
+  [2570,375],[2760,375],                   // ground [4] (2980 removed — near win zone)
   // Mid-air notes — float in the gaps between ground segments
   [600,260],[640,260],                    // gap [0]→[1]
   [1225,260],[1265,260],                  // gap [1]→[2]
@@ -94,7 +94,7 @@ const L1_ENEMY_DEFS = [
   [1920, 368, 1840, 2000, 1.0],
   [2220, 368, 2120, 2320, 1.5],
   [2720, 368, 2620, 2820, 1.0],
-  [3050, 368, 2950, 3150, 1.2],
+  // [3050] enemy removed — within win-zone proximity
   // platform enemies
   [565,  173, 555,  675,  1.0],   // on [7]
   [1065, 153, 1055, 1165, 1.0],   // on [10]
@@ -116,7 +116,7 @@ const L2_PLATFORMS = [
   { x: 0,    y: 400, w: 550,  h: 50 },
   { x: 700,  y: 400, w: 480,  h: 50 },
   { x: 1340, y: 400, w: 420,  h: 50 },
-  { x: 1940, y: 400, w: 500,  h: 50 },
+  { x: 1870, y: 400, w: 570,  h: 50 },   // was x:1940 — 3rd bridge shortened to 130px
   { x: 2650, y: 400, w: 480,  h: 50 },
   { x: 3600, y: 400, w: 1100, h: 50 },
   // Stepping stones in wide gaps [6-8]
@@ -215,6 +215,35 @@ export const prizeBoxes = [];
 export const pigeons    = [];
 export const boxItems   = [];  // items that pop out of hit boxes, waiting to be collected
 
+// ── Level 3-5: extend Level 2's last ground segment and scale enemy speeds ────
+const LEVEL_WORLD_W   = [0, 3200, 4700, 5200, 5700, 6200];
+const LEVEL_SPD_MULT  = [0, 1.0, 1.0, 1.3, 1.6, 2.0];
+
+function extendedL2Platforms(n) {
+  return L2_PLATFORMS.map((p, i) =>
+    i === 5 ? { ...p, w: LEVEL_WORLD_W[n] - p.x } : { ...p }
+  );
+}
+
+function scaledEnemies(defs, mult) {
+  return defs.map(([x, y, l, r, spd]) => [x, y, l, r, +((spd * mult).toFixed(1))]);
+}
+
+// Extra enemies + coins for the extended section of levels 3-5
+const L_EXTRA_ENEMIES = {
+  3: [[4820,368,4680,4970,1.0],[5060,368,4920,5160,1.0]],
+  4: [[4820,368,4680,4970,1.0],[5060,368,4920,5160,1.0],
+      [5280,368,5130,5430,1.0],[5520,368,5360,5660,1.0]],
+  5: [[4820,368,4680,4970,1.0],[5060,368,4920,5160,1.0],
+      [5280,368,5130,5430,1.0],[5520,368,5360,5660,1.0],
+      [5760,368,5600,5910,1.0],[5970,368,5820,6120,1.0]],
+};
+const L_EXTRA_COINS = {
+  3: [[4780,375],[4980,375],[5100,375]],
+  4: [[4780,375],[4980,375],[5200,375],[5430,375],[5620,375]],
+  5: [[4780,375],[4980,375],[5200,375],[5430,375],[5620,375],[5850,375],[6050,375]],
+};
+
 export function initLevel(n) {
   platforms.length  = 0;
   coins.length      = 0;
@@ -223,13 +252,29 @@ export function initLevel(n) {
   pigeons.length    = 0;
   boxItems.length   = 0;
 
-  const pd = n === 1 ? L1_PLATFORMS : L2_PLATFORMS;
-  const cd = n === 1 ? L1_COIN_DEFS : L2_COIN_DEFS;
-  const ed = n === 1 ? L1_ENEMY_DEFS : L2_ENEMY_DEFS;
-  const bd = n === 1 ? L1_BOX_DEFS   : L2_BOX_DEFS;
+  const isHigh = n >= 3;
+  const mult   = LEVEL_SPD_MULT[n] || 1;
 
-  // Shuffle the quiz question pool for this level so questions appear in random order
-  const qiPool = n === 1 ? [0, 1, 2, 3, 4] : [5, 6, 7, 8, 9];
+  const pd = n === 1 ? L1_PLATFORMS :
+             n === 2 ? L2_PLATFORMS :
+             extendedL2Platforms(n);
+
+  const baseCd = n === 1 ? L1_COIN_DEFS : L2_COIN_DEFS;
+  const cd = isHigh ? [...baseCd, ...(L_EXTRA_COINS[n] || [])] : baseCd;
+
+  const baseEd = n === 1 ? L1_ENEMY_DEFS : L2_ENEMY_DEFS;
+  const ed = isHigh
+    ? [...scaledEnemies(baseEd, mult), ...scaledEnemies(L_EXTRA_ENEMIES[n] || [], mult)]
+    : baseEd;
+
+  const bd = n === 1 ? L1_BOX_DEFS : L2_BOX_DEFS;
+
+  // Quiz question pool: 5 per level, shuffled
+  const QI_POOLS = {
+    1: [0,1,2,3,4], 2: [5,6,7,8,9], 3: [10,11,12,13,14],
+    4: [15,16,17,18,19], 5: [3,8,12,17,19],
+  };
+  const qiPool = [...(QI_POOLS[n] || QI_POOLS[1])];
   for (let i = qiPool.length - 1; i > 0; i--) {
     const j = Math.floor(Math.random() * (i + 1));
     [qiPool[i], qiPool[j]] = [qiPool[j], qiPool[i]];

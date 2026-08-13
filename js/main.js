@@ -5,13 +5,13 @@ import { settings, saveSettings } from './model/settings.js';
 import { gameState, media } from './model/state.js';
 import { platforms, coins, enemies, prizeBoxes, pigeons, boxItems } from './model/level.js';
 import './controller/input.js';
-import { resetGame, nextLevel } from './controller/physics.js';
+import { resetGame, nextLevel, jumpToLevel } from './controller/physics.js';
 import { update } from './controller/update.js';
 import {
   drawBg, drawPlatform, drawNote, drawEnemy, drawPigeon,
-  drawPrizeBox, drawBoxItem, drawPlayer, drawGirl, drawParticles,
+  drawPrizeBox, drawBoxItem, drawPlayer, drawGirl, drawParticles, drawCaesar,
 } from './view/draw.js';
-import { syncUI, drawOverlay, drawLevelComplete, drawQuiz, drawKillBar } from './view/hud.js';
+import { syncUI, drawOverlay, drawLevelComplete, drawQuiz, drawKillBar, drawPowerupHud } from './view/hud.js';
 
 // ── Touch-device detection ─────────────────────────────────────────────────────
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches;
@@ -129,7 +129,28 @@ togSfx.addEventListener('click', () => {
   syncSettingsUI();
 });
 
-// ── Mobile-only panel actions ──────────────────────────────────────────────────
+// ── Dev level-jump buttons ────────────────────────────────────────────────────
+function syncLevelBtns() {
+  [1, 2, 3, 4, 5].forEach(n => {
+    const btn = document.getElementById(`btn-level-${n}`);
+    if (btn) btn.classList.toggle('active', gameState.currentLevel === n);
+  });
+}
+[1, 2, 3, 4, 5].forEach(n => {
+  const btn = document.getElementById(`btn-level-${n}`);
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    jumpToLevel(n);
+    syncLevelBtns();
+    syncUI();
+    settingsPanel.classList.add('hidden');
+    resumeAudio();
+    maybeStartBgMusic();
+  });
+});
+syncLevelBtns();
+
+// ── Mobile-only panel actions ─────────────────────────────────────────────────
 if (IS_TOUCH) {
   document.getElementById('btn-panel-fs').addEventListener('pointerdown', e => {
     e.preventDefault();
@@ -224,9 +245,11 @@ function loop() {
   boxItems.forEach(drawBoxItem);
   enemies.forEach(e => { if (e.alive) drawEnemy(e); });
   pigeons.forEach(drawPigeon);
+  drawCaesar();
   drawPlayer();
   drawParticles();
   drawKillBar();
+  drawPowerupHud();
   syncUI();
   if (gameState.quizActive)                    drawQuiz();
   if (gameState.levelComplete)                 drawLevelComplete();

@@ -73,6 +73,18 @@ export const particles = [];
 
 export const media = { playerImage: null, girlImage: null };
 
+export const caesar = {
+  active: false,
+  x: 0, y: 368,
+  w: 40, h: 32,
+  vx: 0, facing: 1,
+  met: false,
+  petTimer: 0,
+  catchTimer: 0,
+  sleeping: false,
+  walkFrame: 0, walkTimer: 0,
+};
+
 export function burst(x, y, color, n = 8) {
   for (let i = 0; i < n; i++) {
     particles.push({
