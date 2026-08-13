@@ -13,7 +13,7 @@ export const gameState = {
   levelComplete: false,
   currentLevel: 1,
   worldW: 3200,
-  girlState: 'idle',   // 'idle' | 'cheer' | 'hearts'
+  girlState: 'idle',
   celebrating: false,
   celebrationTimer: 0,
   cameraX: 0,
@@ -39,6 +39,16 @@ export const gameState = {
   // pigeons
   pigeonTimer: 0,
   pigeonTarget: 360,
+
+  // kill score → extra life
+  killScore: 0,
+  killThreshold: 1000,
+  killBarFlash: 0,
+
+  // active powerup (Allegro speed boost)
+  powerupActive: null,
+  powerupTimer: 0,
+  speedMult: 1,
 };
 
 // Persist the best score once a run ends. Idempotent — safe to call each frame.
@@ -73,6 +83,19 @@ export function burst(x, y, color, n = 8) {
       color,
     });
   }
+}
+
+// Floating text particle — drifts upward and fades out
+export function floatText(x, y, text, color = '#fff') {
+  particles.push({
+    x, y,
+    vx: 0, vy: -1.0,
+    life: 1.2,
+    decay: 0.016,
+    color,
+    symbol: text,
+    fontSize: 22,
+  });
 }
 
 export function burstHearts(x, y) {

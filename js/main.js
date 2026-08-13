@@ -3,15 +3,15 @@ import { CANVAS_W, CANVAS_H } from './constants.js';
 import { resumeAudio, startBgMusic, setBgMusicMuted, SFX } from './audio.js';
 import { settings, saveSettings } from './model/settings.js';
 import { gameState, media } from './model/state.js';
-import { platforms, coins, enemies, prizeBoxes, pigeons } from './model/level.js';
+import { platforms, coins, enemies, prizeBoxes, pigeons, boxItems } from './model/level.js';
 import './controller/input.js';
 import { resetGame, nextLevel } from './controller/physics.js';
 import { update } from './controller/update.js';
 import {
   drawBg, drawPlatform, drawNote, drawEnemy, drawPigeon,
-  drawPrizeBox, drawPlayer, drawGirl, drawParticles,
+  drawPrizeBox, drawBoxItem, drawPlayer, drawGirl, drawParticles,
 } from './view/draw.js';
-import { syncUI, drawOverlay, drawLevelComplete, drawQuiz } from './view/hud.js';
+import { syncUI, drawOverlay, drawLevelComplete, drawQuiz, drawKillBar } from './view/hud.js';
 
 // ── Touch-device detection ─────────────────────────────────────────────────────
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches;
@@ -92,13 +92,11 @@ if (!IS_TOUCH) {
   document.addEventListener('keydown', maybeStartBgMusic, { once: true });
 }
 
-// ── Settings button: ⚙ on desktop, ☰ on mobile ────────────────────────────────
+// ── Settings button ────────────────────────────────────────────────────────────
 const btnSettings    = document.getElementById('btn-settings');
 const settingsPanel  = document.getElementById('settings-panel');
 const togMusic       = document.getElementById('tog-music');
 const togSfx         = document.getElementById('tog-sfx');
-
-if (IS_TOUCH) btnSettings.textContent = '☰';
 
 function syncSettingsUI() {
   togMusic.textContent = settings.music ? 'ON' : 'OFF';
@@ -223,10 +221,12 @@ function loop() {
   drawGirl();
   coins.forEach(drawNote);
   prizeBoxes.forEach(drawPrizeBox);
+  boxItems.forEach(drawBoxItem);
   enemies.forEach(e => { if (e.alive) drawEnemy(e); });
   pigeons.forEach(drawPigeon);
   drawPlayer();
   drawParticles();
+  drawKillBar();
   syncUI();
   if (gameState.quizActive)                    drawQuiz();
   if (gameState.levelComplete)                 drawLevelComplete();

@@ -2,8 +2,9 @@ import { ctx } from '../canvas.js';
 import { CANVAS_W, CANVAS_H } from '../constants.js';
 import { gameState, player, particles, media } from '../model/state.js';
 import { platforms, coins, enemies, prizeBoxes, pigeons } from '../model/level.js';
-
-const NOTE_SYMBOLS = ['♪', '♩', '♫', '♬'];
+const NOTE_SYMBOLS  = ['♪', '♩', '♫', '♬'];
+const NOTE_COLORS   = ['#ee66ff', '#44ddff', '#ffdd44', '#66ff99'];
+const NOTE_SHADOWS  = ['#dd44dd', '#1199bb', '#cc9900', '#22cc66'];
 
 export function drawBg() {
   const sky = ctx.createLinearGradient(0, 0, 0, CANVAS_H);
@@ -78,8 +79,8 @@ export function drawNote(c) {
   const cx = c.x + 8 - gameState.cameraX;
   const cy = c.y + 8 + bobY;
   ctx.save();
-  ctx.shadowColor = '#dd88ff'; ctx.shadowBlur = 14;
-  ctx.fillStyle = '#ee66ff';
+  ctx.shadowColor = NOTE_SHADOWS[c.noteType]; ctx.shadowBlur = 14;
+  ctx.fillStyle = NOTE_COLORS[c.noteType];
   ctx.font = 'bold 20px Arial';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.fillText(NOTE_SYMBOLS[c.noteType], cx, cy);
@@ -89,16 +90,62 @@ export function drawNote(c) {
 export function drawEnemy(e) {
   const ex = e.x - gameState.cameraX;
   if (ex + e.w < 0 || ex > CANVAS_W) return;
-  const lo = e.walkFrame === 0 ? 2 : -2;
-  ctx.fillStyle = '#8B4513'; ctx.fillRect(ex, e.y, e.w, e.h);
-  ctx.fillStyle = '#5a2800'; ctx.fillRect(ex+2, e.y, e.w-4, 10);
-  ctx.fillStyle = '#fcc09a'; ctx.fillRect(ex+4, e.y+10, e.w-8, 12);
+  const w = e.w, h = e.h;
+  const goingLeft = e.vx < 0;
+  const legSwing  = e.walkFrame === 0 ? 3 : -3;
+
+  ctx.save();
+  ctx.translate(ex + (goingLeft ? w : 0), e.y);
+  if (goingLeft) ctx.scale(-1, 1);
+
+  // Tail
+  ctx.fillStyle = '#9090a8';
+  ctx.beginPath();
+  ctx.moveTo(w * 0.14, h * 0.42);
+  ctx.lineTo(w * -0.10, h * 0.56);
+  ctx.lineTo(w * 0.14, h * 0.68);
+  ctx.closePath(); ctx.fill();
+
+  // Body
+  ctx.fillStyle = '#b8b8cc';
+  ctx.beginPath();
+  ctx.ellipse(w * 0.44, h * 0.52, w * 0.33, h * 0.25, 0.1, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Folded wing
+  ctx.fillStyle = '#8a8aaa';
+  ctx.beginPath();
+  ctx.ellipse(w * 0.44, h * 0.46, w * 0.28, h * 0.12, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Iridescent neck patch
+  ctx.fillStyle = '#8899cc';
+  ctx.beginPath();
+  ctx.ellipse(w * 0.66, h * 0.44, w * 0.11, h * 0.15, -0.2, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Head
+  ctx.fillStyle = '#c0c0d0';
+  ctx.beginPath(); ctx.arc(w * 0.78, h * 0.28, w * 0.15, 0, Math.PI * 2); ctx.fill();
+
+  // Eye
+  ctx.fillStyle = '#ff7700';
+  ctx.beginPath(); ctx.arc(w * 0.86, h * 0.23, 2.5, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#000';
-  ctx.fillRect(ex+6,      e.y+13, 5, 5);
-  ctx.fillRect(ex+e.w-11, e.y+13, 5, 5);
-  ctx.fillStyle = '#8B4513';
-  ctx.fillRect(ex+lo,         e.y+e.h-9, 10, 9);
-  ctx.fillRect(ex+e.w-10-lo, e.y+e.h-9, 10, 9);
+  ctx.beginPath(); ctx.arc(w * 0.86, h * 0.23, 1.4, 0, Math.PI * 2); ctx.fill();
+
+  // Beak
+  ctx.fillStyle = '#cc8800';
+  ctx.beginPath();
+  ctx.moveTo(w * 0.92, h * 0.25); ctx.lineTo(w * 1.08, h * 0.29); ctx.lineTo(w * 0.92, h * 0.33);
+  ctx.closePath(); ctx.fill();
+
+  // Walking legs
+  ctx.strokeStyle = '#cc8800'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(w * 0.38, h * 0.76); ctx.lineTo(w * 0.30 + legSwing, h * 1.0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(w * 0.52, h * 0.76); ctx.lineTo(w * 0.60 - legSwing, h * 1.0); ctx.stroke();
+
+  ctx.restore();
 }
 
 export function drawPrizeBox(b) {
@@ -109,16 +156,44 @@ export function drawPrizeBox(b) {
     ctx.fillStyle = '#888'; ctx.fillRect(bx, b.y, b.w, b.h);
     ctx.strokeStyle = '#555'; ctx.lineWidth = 1; ctx.strokeRect(bx, b.y, b.w, b.h);
   } else {
-    ctx.shadowColor = '#FFD700'; ctx.shadowBlur = 10;
-    ctx.fillStyle = '#e6a000'; ctx.fillRect(bx, b.y, b.w, b.h);
-    ctx.fillStyle = '#FFD700'; ctx.fillRect(bx+2, b.y+2, b.w-4, b.h-4);
+    const styles = {
+      quiz:    { glow: '#FFD700', outer: '#e6a000', inner: '#FFD700', text: '#7a4a00' },
+      powerup: { glow: '#aaaaff', outer: '#6666cc', inner: '#ccccff', text: '#223' },
+      danger:  { glow: '#ff4444', outer: '#cc2200', inner: '#ff6644', text: '#200' },
+    };
+    const s = styles[b.type] || styles.quiz;
+    ctx.shadowColor = s.glow; ctx.shadowBlur = 12;
+    ctx.fillStyle = s.outer; ctx.fillRect(bx, b.y, b.w, b.h);
+    ctx.fillStyle = s.inner; ctx.fillRect(bx+2, b.y+2, b.w-4, b.h-4);
     ctx.shadowBlur = 0;
-    ctx.fillStyle = '#7a4a00';
+    ctx.fillStyle = s.text;
     ctx.font = `bold ${Math.min(b.w, b.h) - 4}px Arial`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText('?', bx + b.w/2, b.y + b.h/2 + 1);
-    ctx.strokeStyle = '#c88000'; ctx.lineWidth = 1.5; ctx.strokeRect(bx, b.y, b.w, b.h);
+    ctx.strokeStyle = s.outer; ctx.lineWidth = 1.5; ctx.strokeRect(bx, b.y, b.w, b.h);
   }
+  ctx.restore();
+}
+
+// Item that pops out of a hit box and waits to be collected by the player
+export function drawBoxItem(item) {
+  if (item.collected) return;
+  const bobY = item.settled ? Math.sin(Date.now() / 380 + item.bob) * 3 : 0;
+  const ix = item.x + 12 - gameState.cameraX;
+  const iy = item.y + 12 + bobY;
+  ctx.save();
+  // Outer glow ring
+  ctx.shadowColor = item.color; ctx.shadowBlur = 18;
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.beginPath(); ctx.arc(ix, iy, 14, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = item.color;
+  ctx.beginPath(); ctx.arc(ix, iy, 12, 0, Math.PI * 2); ctx.fill();
+  ctx.shadowBlur = 0;
+  // Symbol
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 16px Arial';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(item.symbol, ix, iy + 1);
   ctx.restore();
 }
 
@@ -134,7 +209,7 @@ export function drawPigeon(pg) {
   if (goingLeft) ctx.scale(-1, 1);
 
   // Tail
-  ctx.fillStyle = '#9090a8';
+  ctx.fillStyle = '#a07848';
   ctx.beginPath();
   ctx.moveTo(w * 0.14, h * 0.42);
   ctx.lineTo(w * -0.1, h * 0.56);
@@ -143,41 +218,41 @@ export function drawPigeon(pg) {
   ctx.fill();
 
   // Body
-  ctx.fillStyle = '#b8b8cc';
+  ctx.fillStyle = '#c8a87c';
   ctx.beginPath();
   ctx.ellipse(w * 0.44, h * 0.52, w * 0.33, h * 0.25, 0.1, 0, Math.PI * 2);
   ctx.fill();
 
-  // Wing — rotates around the shoulder point on the body
+  // Wing
   ctx.save();
   ctx.translate(w * 0.44, h * 0.32);
   ctx.rotate(wingUp ? -0.65 : 0.45);
-  ctx.fillStyle = '#8a8aaa';
+  ctx.fillStyle = '#a07840';
   ctx.beginPath();
   ctx.ellipse(0, h * 0.14, w * 0.35, h * 0.15, 0, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 
   // Iridescent neck patch
-  ctx.fillStyle = '#8899cc';
+  ctx.fillStyle = '#dd7744';
   ctx.beginPath();
   ctx.ellipse(w * 0.66, h * 0.44, w * 0.11, h * 0.15, -0.2, 0, Math.PI * 2);
   ctx.fill();
 
   // Head
-  ctx.fillStyle = '#c0c0d0';
+  ctx.fillStyle = '#d4b888';
   ctx.beginPath();
   ctx.arc(w * 0.78, h * 0.28, w * 0.15, 0, Math.PI * 2);
   ctx.fill();
 
   // Eye
-  ctx.fillStyle = '#ff7700';
+  ctx.fillStyle = '#ff9900';
   ctx.beginPath(); ctx.arc(w * 0.86, h * 0.23, 2.5, 0, Math.PI * 2); ctx.fill();
   ctx.fillStyle = '#000';
   ctx.beginPath(); ctx.arc(w * 0.86, h * 0.23, 1.4, 0, Math.PI * 2); ctx.fill();
 
-  // Beak (points right — gets flipped for left-flyers)
-  ctx.fillStyle = '#cc8800';
+  // Beak
+  ctx.fillStyle = '#cc7700';
   ctx.beginPath();
   ctx.moveTo(w * 0.92, h * 0.25);
   ctx.lineTo(w * 1.08, h * 0.29);
@@ -186,7 +261,7 @@ export function drawPigeon(pg) {
   ctx.fill();
 
   // Legs
-  ctx.strokeStyle = '#cc8800'; ctx.lineWidth = 1.5;
+  ctx.strokeStyle = '#cc7700'; ctx.lineWidth = 1.5;
   ctx.beginPath(); ctx.moveTo(w * 0.38, h * 0.76); ctx.lineTo(w * 0.30, h * 1.0); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(w * 0.52, h * 0.76); ctx.lineTo(w * 0.60, h * 1.0); ctx.stroke();
 
@@ -197,14 +272,18 @@ export function drawPlayer() {
   if (player.invincible > 0 && Math.floor(player.invincible / 5) % 2 === 0) return;
 
   const DW = 96, DH = 64;
+  const isAirborne = !player.onGround && !gameState.celebrating;
+  // Jump sprite appears slightly smaller in the sheet; compensate by rendering it larger
+  const dw = isAirborne ? 108 : DW;
+  const dh = isAirborne ? 72  : DH;
   const bounceY = gameState.celebrating ? -Math.abs(Math.sin(Date.now() / 200)) * 18 : 0;
-  const px = player.x - gameState.cameraX + (player.w - DW) / 2;
-  const py = player.y + player.h - DH + bounceY + 3; // +3 aligns feet; thin tiles need less sink than thick ground
+  const px = player.x - gameState.cameraX + (player.w - dw) / 2;
+  const py = player.y + player.h - dh + bounceY + 3;
 
   if (media.playerImage) {
     let col, row;
     if (gameState.celebrating) {
-      col = 2; row = 1; // hearts / together frame (6th image)
+      col = 0; row = 1; // idle frame — col=2 doesn't exist in the 2-column sheet
     } else if (!player.onGround) {
       col = 1; row = 1; // airborne / jump frame
     } else if (player.vx < -0.5) {
@@ -214,7 +293,7 @@ export function drawPlayer() {
     } else {
       col = 0; row = 1; // idle
     }
-    ctx.drawImage(media.playerImage, col * 768, row * 512, 768, 512, px, py, DW, DH);
+    ctx.drawImage(media.playerImage, col * 768, row * 512, 768, 512, px, py, dw, dh);
     return;
   }
 
@@ -275,7 +354,7 @@ export function drawParticles() {
     ctx.globalAlpha = Math.max(0, p.life);
     if (p.symbol) {
       ctx.fillStyle = p.color;
-      ctx.font = 'bold 18px Arial';
+      ctx.font = `bold ${p.fontSize || 18}px Arial`;
       ctx.textAlign = 'center';
       ctx.textBaseline = 'middle';
       ctx.fillText(p.symbol, p.x - gameState.cameraX, p.y);

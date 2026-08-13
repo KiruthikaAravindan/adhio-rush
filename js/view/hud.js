@@ -2,7 +2,6 @@ import { ctx } from '../canvas.js';
 import { CANVAS_W, CANVAS_H } from '../constants.js';
 import { gameState } from '../model/state.js';
 import { coins } from '../model/level.js';
-
 export function syncUI() {
   const score = gameState.score;
   const best  = Math.max(gameState.bestScore, score);
@@ -12,6 +11,22 @@ export function syncUI() {
   document.getElementById('coins').textContent       = gameState.coinCount;
   document.getElementById('coins-total').textContent = coins.length;
   document.getElementById('level').textContent       = gameState.currentLevel;
+}
+
+// Kill-score progress bar — thin strip drawn on canvas just below the HUD strip
+export function drawKillBar() {
+  if (gameState.killScore === 0 && gameState.killBarFlash === 0) return;
+  const pct  = Math.min(1, gameState.killScore / gameState.killThreshold);
+  const barY = 38;
+  // Track background
+  ctx.fillStyle = 'rgba(255,50,80,0.18)';
+  ctx.fillRect(0, barY, CANVAS_W, 3);
+  // Fill
+  if (pct > 0 || gameState.killBarFlash > 0) {
+    ctx.fillStyle = gameState.killBarFlash > 0 ? '#FFD700' : '#ff4466';
+    ctx.fillRect(0, barY, gameState.killBarFlash > 0 ? CANVAS_W : CANVAS_W * pct, 3);
+  }
+  if (gameState.killBarFlash > 0) gameState.killBarFlash--;
 }
 
 export function drawLevelComplete() {

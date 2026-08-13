@@ -24,9 +24,9 @@ export const QUIZ_QUESTIONS = [
 
 // ── Helper: build a prize box anchored above a platform ──────────────────────
 const BOX_W = 26, BOX_H = 26, BOX_GAP = 70;
-function mkBox(platforms, hostIdx, qi) {
+function mkBox(platforms, hostIdx, qi, type) {
   const p = platforms[hostIdx];
-  return { x: Math.round(p.x + p.w / 2 - BOX_W / 2), y: p.y - BOX_GAP - BOX_H, w: BOX_W, h: BOX_H, hit: false, qi };
+  return { x: Math.round(p.x + p.w / 2 - BOX_W / 2), y: p.y - BOX_GAP - BOX_H, w: BOX_W, h: BOX_H, hit: false, qi, type };
 }
 
 // ── Level 1 ───────────────────────────────────────────────────────────────────
@@ -101,8 +101,14 @@ const L1_ENEMY_DEFS = [
   [2320, 153, 2310, 2440, 1.0],   // on [16]
 ];
 
-// Prize boxes: platform indices 6, 9, 12, 15, 18 — qi 0-4
-const L1_BOX_DEFS = [[6],[9],[12],[15],[18]];
+// Prize boxes: [platformIdx, type] — quiz(gold), powerup(blue), danger(red)
+const L1_BOX_DEFS = [
+  [6,  'quiz'],
+  [9,  'powerup'],
+  [12, 'quiz'],
+  [15, 'danger'],
+  [18, 'quiz'],
+];
 
 // ── Level 2 ───────────────────────────────────────────────────────────────────
 const L2_PLATFORMS = [
@@ -192,8 +198,14 @@ const L2_ENEMY_DEFS = [
   [3070, 151, 3010, 3140, 1.4],   // on [23]
 ];
 
-// Prize boxes: platform indices 10, 13, 17, 20, 25 — qi 5-9
-const L2_BOX_DEFS = [[10],[13],[17],[20],[25]];
+// Prize boxes: [platformIdx, type] — quiz(gold), powerup(blue), danger(red)
+const L2_BOX_DEFS = [
+  [10, 'quiz'],
+  [13, 'powerup'],
+  [17, 'danger'],
+  [20, 'quiz'],
+  [25, 'powerup'],
+];
 
 // ── Mutable exports (populated by initLevel) ──────────────────────────────────
 export const platforms  = [];
@@ -201,6 +213,7 @@ export const coins      = [];
 export const enemies    = [];
 export const prizeBoxes = [];
 export const pigeons    = [];
+export const boxItems   = [];  // items that pop out of hit boxes, waiting to be collected
 
 export function initLevel(n) {
   platforms.length  = 0;
@@ -208,6 +221,7 @@ export function initLevel(n) {
   enemies.length    = 0;
   prizeBoxes.length = 0;
   pigeons.length    = 0;
+  boxItems.length   = 0;
 
   const pd = n === 1 ? L1_PLATFORMS : L2_PLATFORMS;
   const cd = n === 1 ? L1_COIN_DEFS : L2_COIN_DEFS;
@@ -233,7 +247,7 @@ export function initLevel(n) {
     left: l, right: r,
     walkFrame: 0, walkTimer: 0,
   }));
-  bd.forEach(([hi], idx) => prizeBoxes.push(mkBox(platforms, hi, qiPool[idx])));
+  bd.forEach(([hi, type], idx) => prizeBoxes.push(mkBox(platforms, hi, qiPool[idx], type)));
 }
 
 // Seed level 1 on module load so all importing modules get valid arrays immediately
