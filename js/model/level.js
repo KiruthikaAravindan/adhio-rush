@@ -23,7 +23,7 @@ export const QUIZ_QUESTIONS = [
 ];
 
 // ── Helper: build a prize box anchored above a platform ──────────────────────
-const BOX_W = 28, BOX_H = 46, BOX_GAP = 52;
+const BOX_W = 36, BOX_H = 36, BOX_GAP = 70;
 function mkBox(platforms, hostIdx, qi) {
   const p = platforms[hostIdx];
   return { x: Math.round(p.x + p.w / 2 - BOX_W / 2), y: p.y - BOX_GAP - BOX_H, w: BOX_W, h: BOX_H, hit: false, qi };

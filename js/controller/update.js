@@ -222,7 +222,8 @@ export function update() {
   }
 
   // ── Win trigger — start celebration when player touches girl ──────────────────
-  if (!gameState.celebrating && player.x > gameState.worldW - 130) {
+  const girlHitBox = { x: gameState.worldW - 118, y: 336, w: 43, h: 64 };
+  if (!gameState.celebrating && overlap(player, girlHitBox)) {
     gameState.girlState        = 'hearts';
     gameState.celebrating      = true;
     gameState.celebrationTimer = 180;   // ~3 s at 60 fps

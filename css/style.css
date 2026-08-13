@@ -31,16 +31,15 @@ body.is-touch {
   background: #000;
 }
 
-/* ── HUD strip overlaid at top of canvas ── */
-#ui {
+/* ── Mini HUD — score + lives always visible ── */
+#mini-hud {
   position: absolute;
-  top: 0; left: 0; right: 0;
+  top: 0; left: 0;
   z-index: 5;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 32px;
-  padding: 6px 12px;
+  gap: 20px;
+  padding: 8px 14px;
   color: #fff;
   font-size: 15px;
   font-weight: bold;
@@ -48,14 +47,32 @@ body.is-touch {
   pointer-events: none;
   text-shadow: 0 1px 4px rgba(0,0,0,0.9), 0 0 10px rgba(0,0,0,0.6);
 }
-#ui span { display: flex; align-items: center; gap: 4px; }
-#ui span span { color: #FFD700; min-width: 28px; text-align: left; }
+#mini-hud span { display: flex; align-items: center; gap: 4px; }
+#mini-hud span span { color: #FFD700; min-width: 24px; }
+
+/* ── Hamburger menu button ── */
+#btn-menu {
+  position: absolute;
+  top: 6px; right: 6px;
+  z-index: 6;
+  width: 48px; height: 48px;
+  background: rgba(255,255,255,0.12);
+  border: 2px solid rgba(255,255,255,0.28);
+  border-radius: 10px;
+  color: rgba(255,255,255,0.9);
+  font-size: 22px;
+  cursor: pointer;
+  pointer-events: all;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.1s;
+}
+#btn-menu:hover  { background: rgba(255,255,255,0.24); }
+#btn-menu:active { background: rgba(255,255,255,0.40); }
 
 /* ══════════════════════════════════════════════════════════════════
    MOBILE-ONLY UI — hidden by default, shown only on touch devices
    ══════════════════════════════════════════════════════════════════ */
 #touch-controls,
-#welcome-modal,
 #landscape-prompt { display: none; }
 
 /* ── Touch controls layer ── */
@@ -164,8 +181,8 @@ body.is-touch #touch-controls {
   body.is-touch #landscape-prompt { display: flex; }
 }
 
-/* ── Welcome modal (touch only) ── */
-body.is-touch #welcome-modal {
+/* ── Welcome modal — shown on all devices, hidden via JS after Start ── */
+#welcome-modal {
   position: fixed;
   inset: 0;
   z-index: 200;
@@ -174,7 +191,7 @@ body.is-touch #welcome-modal {
   justify-content: center;
   background: rgba(10,0,30,0.96);
 }
-body.is-touch #welcome-modal.hidden { display: none; }
+#welcome-modal.hidden { display: none; }
 
 .modal-box {
   text-align: center;
@@ -255,23 +272,8 @@ body.is-touch #welcome-modal.hidden { display: none; }
 }
 #btn-action.hidden { display: none; }
 
-/* ── Settings button (in HUD) ── */
-#btn-settings {
-  background: transparent;
-  border: none;
-  color: rgba(255,255,255,0.65);
-  font-size: 16px;
-  cursor: pointer;
-  pointer-events: all;
-  padding: 2px 6px;
-  transition: color 0.1s;
-  line-height: 1;
-}
-#btn-settings:hover  { color: #ee66ff; }
-#btn-settings:active { color: #cc44dd; }
-
-/* ── Settings panel ── */
-#settings-panel {
+/* ── Combined HUD + settings panel ── */
+#hud-panel {
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
@@ -286,13 +288,50 @@ body.is-touch #welcome-modal.hidden { display: none; }
   font-family: 'Courier New', monospace;
   pointer-events: all;
 }
-#settings-panel.hidden { display: none; }
+#hud-panel.hidden { display: none; }
+
+/* Stats rows inside panel */
+.hud-stats {
+  margin-bottom: 4px;
+}
+.hud-stat-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5px 0;
+  font-size: 14px;
+  letter-spacing: 1px;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.hud-stat-row:last-child { border-bottom: none; }
+.stat-lbl { color: #ccc; }
+.stat-num { color: #FFD700; font-weight: bold; min-width: 40px; text-align: right; }
+
+.hud-divider {
+  height: 1px;
+  background: rgba(255,255,255,0.15);
+  margin: 10px 0;
+}
+
+#btn-menu-close {
+  margin-top: 14px;
+  background: transparent;
+  color: #888;
+  border: 1px solid #443366;
+  border-radius: 8px;
+  padding: 5px 18px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.1s, border-color 0.1s;
+}
+#btn-menu-close:hover { color: #ccc; border-color: #665588; }
 
 .settings-title {
   font-size: 15px;
   color: #ee66ff;
   letter-spacing: 3px;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 .settings-row {
   display: flex;
@@ -317,16 +356,3 @@ body.is-touch #welcome-modal.hidden { display: none; }
   transition: background 0.1s, border-color 0.1s;
 }
 .tog-btn.off { background: #661a1a; border-color: #aa4444; }
-#btn-settings-close {
-  margin-top: 14px;
-  background: transparent;
-  color: #888;
-  border: 1px solid #443366;
-  border-radius: 8px;
-  padding: 5px 18px;
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  cursor: pointer;
-  transition: color 0.1s, border-color 0.1s;
-}
-#btn-settings-close:hover { color: #ccc; border-color: #665588; }

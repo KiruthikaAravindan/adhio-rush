@@ -28,7 +28,7 @@ export function resolveVsWorld() {
 }
 
 export function resetPlayer() {
-  player.x = 100; player.y = 300;
+  player.x = 100; player.y = 360;
   player.vx = 0;  player.vy = 0;
   player.invincible = 0;
   gameState.cameraX = 0;

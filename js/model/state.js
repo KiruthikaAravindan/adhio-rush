@@ -51,7 +51,7 @@ export function commitBestScore() {
 }
 
 export const player = {
-  x: 100, y: 300, w: 32, h: 40,
+  x: 100, y: 360, w: 32, h: 40,
   vx: 0, vy: 0,
   onGround: false,
   facing: 1,

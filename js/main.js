@@ -18,7 +18,7 @@ const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches;
 if (IS_TOUCH) document.body.classList.add('is-touch');
 
 gameState.speedScale = IS_TOUCH ? 0.62 : 1;
-gameState.jumpScale  = IS_TOUCH ? 1.2  : 1;
+gameState.jumpScale  = 1;
 
 // ── Responsive scaling ─────────────────────────────────────────────────────────
 const gameWrap = document.getElementById('game-wrap');
@@ -68,25 +68,35 @@ function maybeStartBgMusic() {
   startBgMusic();
 }
 
-// ── Welcome modal ──────────────────────────────────────────────────────────────
+// ── Welcome modal — shown on all devices ──────────────────────────────────────
 const welcomeModal = document.getElementById('welcome-modal');
+
+if (!IS_TOUCH) {
+  document.getElementById('btn-start').textContent = '▶  CLICK TO PLAY';
+  const hintRow = document.querySelector('.hint-row');
+  if (hintRow) {
+    hintRow.innerHTML =
+      '<span>← →  Move</span>' +
+      '<span>Space  Jump</span>' +
+      '<span>R  Restart</span>';
+  }
+}
+
+document.getElementById('btn-start').addEventListener('click', () => {
+  resumeAudio();
+  maybeStartBgMusic();
+  if (IS_TOUCH) enterFullscreen();
+  welcomeModal.classList.add('hidden');
+  canvas.focus();
+});
+
 if (IS_TOUCH) {
-  document.getElementById('btn-start').addEventListener('click', () => {
-    resumeAudio();
-    maybeStartBgMusic();
-    enterFullscreen();
-    welcomeModal.classList.add('hidden');
-    canvas.focus();
-  });
   document.getElementById('btn-fs').addEventListener('pointerdown', e => {
     e.preventDefault();
     toggleFullscreen();
   });
 } else {
-  welcomeModal.classList.add('hidden');
-  // Start music on first key or click
-  document.addEventListener('keydown',   maybeStartBgMusic, { once: true });
-  document.addEventListener('pointerdown', maybeStartBgMusic, { once: true });
+  document.addEventListener('keydown', maybeStartBgMusic, { once: true });
 }
 
 // ── Action button (game-over / level-complete) ─────────────────────────────────
@@ -124,10 +134,10 @@ document.getElementById('btn-restart').addEventListener('pointerdown', e => {
   syncUI();
 });
 
-// ── Settings panel ─────────────────────────────────────────────────────────────
-const panelSettings = document.getElementById('settings-panel');
-const togMusic      = document.getElementById('tog-music');
-const togSfx        = document.getElementById('tog-sfx');
+// ── Hamburger menu panel ───────────────────────────────────────────────────────
+const hudPanel  = document.getElementById('hud-panel');
+const togMusic  = document.getElementById('tog-music');
+const togSfx    = document.getElementById('tog-sfx');
 
 function syncSettingsUI() {
   togMusic.textContent = settings.music ? 'ON' : 'OFF';
@@ -137,12 +147,16 @@ function syncSettingsUI() {
 }
 syncSettingsUI();
 
-document.getElementById('btn-settings').addEventListener('click', () => {
+document.getElementById('btn-menu').addEventListener('click', () => {
   syncSettingsUI();
-  panelSettings.classList.toggle('hidden');
+  hudPanel.classList.toggle('hidden');
 });
-document.getElementById('btn-settings-close').addEventListener('click', () => {
-  panelSettings.classList.add('hidden');
+document.getElementById('btn-menu-close').addEventListener('click', () => {
+  hudPanel.classList.add('hidden');
+});
+// Close panel when clicking outside it
+document.getElementById('gameCanvas').addEventListener('click', () => {
+  hudPanel.classList.add('hidden');
 });
 togMusic.addEventListener('click', () => {
   settings.music = !settings.music;

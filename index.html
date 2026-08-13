@@ -35,19 +35,18 @@
   <!-- Game container — JS scales this to fill the screen -->
   <div id="game-wrap">
 
-    <!-- HUD lives inside the wrap so it scales with the game -->
-    <div id="ui">
-      <span>🎮 <span id="level">1</span></span>
-      <span>⭐ <span id="score">0</span></span>
-      <span>🏆 <span id="best">0</span></span>
-      <span>❤️ <span id="lives">3</span></span>
-      <span>♪ <span id="coins">0</span></span>
-      <button id="btn-settings">⚙</button>
+    <!-- Mini HUD: score + lives always visible during play -->
+    <div id="mini-hud">
+      <span>⭐ <span id="score-mini">0</span></span>
+      <span>❤️ <span id="lives-mini">3</span></span>
     </div>
+
+    <!-- Hamburger menu button — large tap target, top-right -->
+    <button id="btn-menu" aria-label="Menu">☰</button>
 
     <canvas id="gameCanvas" width="800" height="450"></canvas>
 
-    <!-- Mobile only: virtual joystick + jump (Option C) -->
+    <!-- Mobile only: virtual joystick + jump -->
     <div id="touch-controls">
       <div id="joystick">
         <div id="joy-knob"></div>
@@ -59,8 +58,17 @@
 
     <button id="btn-action" class="hidden"></button>
 
-    <div id="settings-panel" class="hidden">
-      <div class="settings-title">SETTINGS</div>
+    <!-- Combined stats + settings panel -->
+    <div id="hud-panel" class="hidden">
+      <div class="settings-title">🎵 MARIO RUSH</div>
+      <div class="hud-stats">
+        <div class="hud-stat-row"><span class="stat-lbl">🎮 Level</span><span class="stat-num" id="level">1</span></div>
+        <div class="hud-stat-row"><span class="stat-lbl">⭐ Score</span><span class="stat-num" id="score">0</span></div>
+        <div class="hud-stat-row"><span class="stat-lbl">🏆 Best</span><span class="stat-num" id="best">0</span></div>
+        <div class="hud-stat-row"><span class="stat-lbl">❤️ Lives</span><span class="stat-num" id="lives">3</span></div>
+        <div class="hud-stat-row"><span class="stat-lbl">♪ Notes</span><span class="stat-num" id="coins">0</span></div>
+      </div>
+      <div class="hud-divider"></div>
       <div class="settings-row">
         <span>Music</span>
         <button id="tog-music" class="tog-btn">ON</button>
@@ -69,7 +77,7 @@
         <span>Sound FX</span>
         <button id="tog-sfx" class="tog-btn">ON</button>
       </div>
-      <button id="btn-settings-close">✕ Close</button>
+      <button id="btn-menu-close">✕ Close</button>
     </div>
 
   </div>

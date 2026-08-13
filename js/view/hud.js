@@ -4,11 +4,15 @@ import { gameState } from '../model/state.js';
 import { coins } from '../model/level.js';
 
 export function syncUI() {
-  document.getElementById('score').textContent = gameState.score;
-  document.getElementById('best').textContent  = Math.max(gameState.bestScore, gameState.score);
-  document.getElementById('lives').textContent = gameState.lives;
-  document.getElementById('coins').textContent = gameState.coinCount;
-  document.getElementById('level').textContent = gameState.currentLevel;
+  const score = gameState.score;
+  const best  = Math.max(gameState.bestScore, score);
+  document.getElementById('score').textContent      = score;
+  document.getElementById('score-mini').textContent = score;
+  document.getElementById('best').textContent       = best;
+  document.getElementById('lives').textContent      = gameState.lives;
+  document.getElementById('lives-mini').textContent = gameState.lives;
+  document.getElementById('coins').textContent      = gameState.coinCount;
+  document.getElementById('level').textContent      = gameState.currentLevel;
 }
 
 export function drawLevelComplete() {

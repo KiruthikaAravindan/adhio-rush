@@ -199,7 +199,7 @@ export function drawPlayer() {
   const DW = 96, DH = 64;
   const bounceY = gameState.celebrating ? -Math.abs(Math.sin(Date.now() / 200)) * 18 : 0;
   const px = player.x - gameState.cameraX + (player.w - DW) / 2;
-  const py = player.y + player.h - DH + bounceY;
+  const py = player.y + player.h - DH + bounceY + 6; // +6 aligns feet with ground
 
   if (media.playerImage) {
     let col, row;
