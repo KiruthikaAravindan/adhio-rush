@@ -130,7 +130,7 @@ function hitBox(b) {
 
 // ── Main update ────────────────────────────────────────────────────────────────
 
-export function update() {
+export function update(dt) {
   // ── Restart / level-advance ─────────────────────────────────────────────────
   if (isRestart()) {
     if (!gameState.restartHeld) {
@@ -150,18 +150,19 @@ export function update() {
   // ── Celebration ─────────────────────────────────────────────────────────────
   if (gameState.celebrating) {
     player.vx = 0;
-    player.vy = Math.min(player.vy + GRAVITY, 16);
-    player.y += player.vy;
+    player.vy = Math.min(player.vy + GRAVITY * dt, 16);
+    player.y += player.vy * dt;
     resolveVsWorld();
-    gameState.celebrationTimer--;
-    if (gameState.celebrationTimer % 18 === 0) {
+    const prevCelebTimer = gameState.celebrationTimer;
+    gameState.celebrationTimer -= dt;
+    if (Math.floor(prevCelebTimer / 18) > Math.floor(gameState.celebrationTimer / 18)) {
       const midX = gameState.worldW - 155;
       burstHearts(midX, 355);
     }
     for (let i = particles.length - 1; i >= 0; i--) {
       const p = particles[i];
-      p.x += p.vx; p.y += p.vy; p.vy += 0.3;
-      p.life -= (p.decay || 0.045);
+      p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 0.3 * dt;
+      p.life -= (p.decay || 0.045) * dt;
       if (p.life <= 0) particles.splice(i, 1);
     }
     if (gameState.celebrationTimer <= 0) {
@@ -175,7 +176,7 @@ export function update() {
   // ── Quiz overlay ────────────────────────────────────────────────────────────
   if (gameState.quizActive) {
     if (gameState.quizAnswered) {
-      gameState.quizTimer--;
+      gameState.quizTimer -= dt;
       if (gameState.quizTimer <= 0) { gameState.quizActive = false; gameState.quizData = null; }
     }
     return;
@@ -183,8 +184,8 @@ export function update() {
 
   // ── Powerup timer ───────────────────────────────────────────────────────────
   if (gameState.powerupTimer > 0) {
-    gameState.powerupTimer--;
-    if (gameState.powerupTimer === 0) {
+    gameState.powerupTimer -= dt;
+    if (gameState.powerupTimer <= 0) {
       gameState.speedMult    = 1;
       gameState.powerupActive = null;
     }
@@ -194,7 +195,7 @@ export function update() {
   const speed = SPEED * (gameState.speedScale ?? 1) * gameState.speedMult;
   if (isLeft())       { player.vx = -speed; player.facing = -1; }
   else if (isRight()) { player.vx =  speed; player.facing =  1; }
-  else player.vx *= 0.72;
+  else player.vx *= Math.pow(0.72, dt);
 
   const jumpNow = isJump();
   if (jumpNow && !gameState.jumpDown && player.onGround) {
@@ -202,9 +203,9 @@ export function update() {
   }
   gameState.jumpDown = jumpNow;
 
-  player.vy = Math.min(player.vy + GRAVITY, 16);
-  player.x  = Math.max(0, Math.min(player.x + player.vx, gameState.worldW - player.w));
-  player.y += player.vy;
+  player.vy = Math.min(player.vy + GRAVITY * dt, 16);
+  player.x  = Math.max(0, Math.min(player.x + player.vx * dt, gameState.worldW - player.w));
+  player.y += player.vy * dt;
 
   // ── Prize box hit detection — must run BEFORE resolveVsWorld ─────────────────
   for (const b of prizeBoxes) {
@@ -245,8 +246,8 @@ export function update() {
     if (item.collected) { boxItems.splice(i, 1); continue; }
 
     if (!item.settled) {
-      item.vy += 0.25;
-      item.y  += item.vy;
+      item.vy += 0.25 * dt;
+      item.y  += item.vy * dt;
       if (item.y >= item.restY) { item.y = item.restY; item.vy = 0; item.settled = true; }
     }
 
@@ -258,7 +259,7 @@ export function update() {
 
   // ── Pigeon spawning — Level 2+ ───────────────────────────────────────────────
   if (gameState.currentLevel >= 2) {
-    gameState.pigeonTimer++;
+    gameState.pigeonTimer += dt;
     if (gameState.pigeonTimer >= gameState.pigeonTarget) {
       gameState.pigeonTimer = 0;
       // Per-level base interval (reduces with higher level)
@@ -284,8 +285,8 @@ export function update() {
   // ── Pigeon movement + collision ─────────────────────────────────────────────
   for (let i = pigeons.length - 1; i >= 0; i--) {
     const pg = pigeons[i];
-    pg.x += pg.vx;
-    pg.wingTimer++;
+    pg.x += pg.vx * dt;
+    pg.wingTimer += dt;
     if (pg.wingTimer > 14) { pg.wingFrame = (pg.wingFrame + 1) % 2; pg.wingTimer = 0; }
     if (pg.x < -100 || pg.x > gameState.worldW + 100) { pigeons.splice(i, 1); continue; }
 
@@ -315,15 +316,15 @@ export function update() {
 
     // Spawned danger enemies fall to ground level before becoming active
     if (e.spawned) {
-      e.vy = (e.vy || 0) + GRAVITY;
-      e.y += e.vy;
+      e.vy = (e.vy || 0) + GRAVITY * dt;
+      e.y += e.vy * dt;
       if (e.y >= 368) { e.y = 368; e.vy = 0; e.spawned = false; }
       continue; // not active while falling
     }
 
-    e.x += e.vx;
+    e.x += e.vx * dt;
     if (e.x <= e.left || e.x + e.w >= e.right) e.vx *= -1;
-    e.walkTimer++;
+    e.walkTimer += dt;
     if (e.walkTimer > 10) { e.walkFrame = (e.walkFrame + 1) % 2; e.walkTimer = 0; }
 
     if (player.invincible > 0 || !overlap(ph, e)) continue;
@@ -361,18 +362,18 @@ export function update() {
     const targetX = player.x - 55;
     const dx = targetX - caesar.x;
     caesar.vx = Math.sign(dx) * Math.min(Math.abs(dx) * 0.12, 3.5);
-    caesar.x += caesar.vx;
+    caesar.x += caesar.vx * dt;
     if (Math.abs(caesar.vx) > 0.1) caesar.facing = caesar.vx > 0 ? 1 : -1;
     caesar.x = Math.max(0, Math.min(caesar.x, gameState.worldW - caesar.w));
 
     // Walk animation
     if (Math.abs(caesar.vx) > 0.3) {
-      caesar.walkTimer++;
+      caesar.walkTimer += dt;
       if (caesar.walkTimer > 10) { caesar.walkFrame = (caesar.walkFrame + 1) % 2; caesar.walkTimer = 0; }
     } else {
       caesar.walkFrame = 0;
     }
-    if (caesar.petTimer > 0) caesar.petTimer--;
+    if (caesar.petTimer > 0) caesar.petTimer -= dt;
 
     // First meeting — player touches Caesar → petting interaction
     if (!caesar.met && overlap(ph, caesar)) {
@@ -388,7 +389,7 @@ export function update() {
 
     // Active catch window
     if (caesar.catchTimer > 0) {
-      caesar.catchTimer--;
+      caesar.catchTimer -= dt;
       const RANGE = 140;
 
       // Catch nearby pigeons
@@ -422,7 +423,7 @@ export function update() {
         }
       }
 
-      if (caesar.catchTimer === 0) {
+      if (caesar.catchTimer <= 0) {
         caesar.sleeping = true;
         floatText(caesar.x + caesar.w / 2, caesar.y - 10, 'zzz...', '#aaeeff');
       }
@@ -431,18 +432,18 @@ export function update() {
 
   // ── Player animation ─────────────────────────────────────────────────────────
   if (Math.abs(player.vx) > 0.5) {
-    player.walkTimer++;
+    player.walkTimer += dt;
     if (player.walkTimer > 9) { player.walkFrame = (player.walkFrame + 1) % 2; player.walkTimer = 0; }
   } else {
     player.walkFrame = 0;
   }
-  if (player.invincible > 0) player.invincible--;
+  if (player.invincible > 0) player.invincible -= dt;
 
   // ── Particles ────────────────────────────────────────────────────────────────
   for (let i = particles.length - 1; i >= 0; i--) {
     const p = particles[i];
-    p.x += p.vx; p.y += p.vy; p.vy += 0.3;
-    p.life -= (p.decay || 0.045);
+    p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 0.3 * dt;
+    p.life -= (p.decay || 0.045) * dt;
     if (p.life <= 0) particles.splice(i, 1);
   }
 

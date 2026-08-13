@@ -229,8 +229,13 @@ canvas.addEventListener('pointerdown', e => {
 });
 
 // ── Game loop ──────────────────────────────────────────────────────────────────
+let _lastTime = 0;
+
 function loop() {
-  update();
+  const now = performance.now();
+  const dt  = _lastTime ? Math.min((now - _lastTime) / (1000 / 60), 3) : 1;
+  _lastTime = now;
+  update(dt);
 
   const muteMusic = gameState.quizActive || gameState.gameOver ||
                     gameState.gameWon    || gameState.levelComplete;
