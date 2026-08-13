@@ -23,10 +23,10 @@ export const QUIZ_QUESTIONS = [
 ];
 
 // ── Helper: build a prize box anchored above a platform ──────────────────────
-const BOX = 18, BOX_GAP = 52;
+const BOX_W = 28, BOX_H = 46, BOX_GAP = 52;
 function mkBox(platforms, hostIdx, qi) {
   const p = platforms[hostIdx];
-  return { x: Math.round(p.x + p.w / 2 - BOX / 2), y: p.y - BOX_GAP - BOX, w: BOX, h: BOX, hit: false, qi };
+  return { x: Math.round(p.x + p.w / 2 - BOX_W / 2), y: p.y - BOX_GAP - BOX_H, w: BOX_W, h: BOX_H, hit: false, qi };
 }
 
 // ── Level 1 ───────────────────────────────────────────────────────────────────
@@ -78,6 +78,11 @@ const L1_COIN_DEFS = [
   [1360,375],[1560,375],                  // ground [2]
   [1890,375],[2070,375],                  // ground [3]
   [2570,375],[2760,375],[2980,375],       // ground [4]
+  // Mid-air notes — float in the gaps between ground segments
+  [600,260],[640,260],                    // gap [0]→[1]
+  [1225,260],[1265,260],                  // gap [1]→[2]
+  [1745,260],[1785,260],                  // gap [2]→[3]
+  [2430,260],[2460,260],                  // gap [3]→[4]
 ];
 
 const L1_ENEMY_DEFS = [
@@ -160,6 +165,12 @@ const L2_COIN_DEFS = [
   [2000,375],[2240,375],                  // ground [3]
   [2720,375],[2980,375],                  // ground [4]
   [3680,375],[3960,375],[4200,375],       // ground [5]
+  // Mid-air notes — float in the gaps between ground segments
+  [590,260],[640,260],                    // gap [0]→[1]
+  [1230,260],[1290,260],                  // gap [1]→[2]
+  [1800,260],[1870,260],                  // gap [2]→[3]
+  [2490,260],[2570,260],                  // gap [3]→[4]
+  [3200,260],[3350,260],[3480,260],       // gap [4]→[5]
 ];
 
 const L2_ENEMY_DEFS = [

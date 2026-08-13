@@ -1,3 +1,5 @@
+import { settings } from './model/settings.js';
+
 const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
 
 export function resumeAudio() {
@@ -5,6 +7,7 @@ export function resumeAudio() {
 }
 
 export function tone(freq, endFreq, type, dur, vol) {
+  if (!settings.sfx) return;
   resumeAudio();
   const osc  = audioCtx.createOscillator();
   const gain = audioCtx.createGain();
@@ -153,10 +156,12 @@ export function startBgMusic() {
   resumeAudio();
   bgLoopBase      = audioCtx.currentTime + 0.1;
   bgBarsScheduled = 0;
-  // Fade in over 1s
-  bgGain.gain.cancelScheduledValues(audioCtx.currentTime);
-  bgGain.gain.setValueAtTime(0.001, audioCtx.currentTime);
-  bgGain.gain.linearRampToValueAtTime(1, audioCtx.currentTime + 1.0);
+  if (settings.music) {
+    // Fade in over 1s
+    bgGain.gain.cancelScheduledValues(audioCtx.currentTime);
+    bgGain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+    bgGain.gain.linearRampToValueAtTime(1, audioCtx.currentTime + 1.0);
+  }
   // Schedule the first bar immediately
   bgScheduleLoop(bgLoopBase);
   bgBarsScheduled = 1;
@@ -178,6 +183,7 @@ export function stopBgMusic() {
 
 // Smooth mute/unmute via the master gain — already-queued notes fade out
 export function setBgMusicMuted(muted) {
+  const shouldSilence = muted || !settings.music;
   bgGain.gain.cancelScheduledValues(audioCtx.currentTime);
-  bgGain.gain.setTargetAtTime(muted ? 0 : 1, audioCtx.currentTime, 0.15);
+  bgGain.gain.setTargetAtTime(shouldSilence ? 0 : 1, audioCtx.currentTime, 0.15);
 }

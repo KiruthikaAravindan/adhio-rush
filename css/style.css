@@ -254,3 +254,79 @@ body.is-touch #welcome-modal.hidden { display: none; }
   box-shadow: 0 0 14px rgba(233,69,96,0.4);
 }
 #btn-action.hidden { display: none; }
+
+/* ── Settings button (in HUD) ── */
+#btn-settings {
+  background: transparent;
+  border: none;
+  color: rgba(255,255,255,0.65);
+  font-size: 16px;
+  cursor: pointer;
+  pointer-events: all;
+  padding: 2px 6px;
+  transition: color 0.1s;
+  line-height: 1;
+}
+#btn-settings:hover  { color: #ee66ff; }
+#btn-settings:active { color: #cc44dd; }
+
+/* ── Settings panel ── */
+#settings-panel {
+  position: absolute;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 20;
+  background: rgba(10, 0, 30, 0.96);
+  border: 2px solid #554488;
+  border-radius: 16px;
+  padding: 24px 36px;
+  min-width: 220px;
+  text-align: center;
+  color: #fff;
+  font-family: 'Courier New', monospace;
+  pointer-events: all;
+}
+#settings-panel.hidden { display: none; }
+
+.settings-title {
+  font-size: 15px;
+  color: #ee66ff;
+  letter-spacing: 3px;
+  margin-bottom: 20px;
+}
+.settings-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 14px;
+  font-size: 13px;
+  letter-spacing: 1px;
+}
+.tog-btn {
+  background: #1a6630;
+  color: #fff;
+  border: 1px solid #44aa55;
+  border-radius: 8px;
+  padding: 5px 16px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px;
+  font-weight: bold;
+  cursor: pointer;
+  min-width: 52px;
+  transition: background 0.1s, border-color 0.1s;
+}
+.tog-btn.off { background: #661a1a; border-color: #aa4444; }
+#btn-settings-close {
+  margin-top: 14px;
+  background: transparent;
+  color: #888;
+  border: 1px solid #443366;
+  border-radius: 8px;
+  padding: 5px 18px;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  cursor: pointer;
+  transition: color 0.1s, border-color 0.1s;
+}
+#btn-settings-close:hover { color: #ccc; border-color: #665588; }

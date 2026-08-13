@@ -114,7 +114,7 @@ export function drawPrizeBox(b) {
     ctx.fillStyle = '#FFD700'; ctx.fillRect(bx+2, b.y+2, b.w-4, b.h-4);
     ctx.shadowBlur = 0;
     ctx.fillStyle = '#7a4a00';
-    ctx.font = `bold ${b.h - 4}px Arial`;
+    ctx.font = `bold ${Math.min(b.w, b.h) - 4}px Arial`;
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.fillText('?', bx + b.w/2, b.y + b.h/2 + 1);
     ctx.strokeStyle = '#c88000'; ctx.lineWidth = 1.5; ctx.strokeRect(bx, b.y, b.w, b.h);
@@ -203,7 +203,7 @@ export function drawPlayer() {
 
   if (media.playerImage) {
     let col, row;
-    if (gameState.celebrating || !player.onGround) {
+    if (gameState.celebrating) {
       col = 1; row = 1; // jump frame
     } else if (player.vx < -0.5) {
       col = 0; row = 0; // walk left

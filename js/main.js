@@ -1,6 +1,7 @@
 import { canvas, ctx } from './canvas.js';
 import { CANVAS_W, CANVAS_H } from './constants.js';
 import { resumeAudio, startBgMusic, setBgMusicMuted } from './audio.js';
+import { settings, saveSettings } from './model/settings.js';
 import { gameState, media } from './model/state.js';
 import { platforms, coins, enemies, prizeBoxes, pigeons } from './model/level.js';
 import './controller/input.js';
@@ -34,16 +35,7 @@ document.addEventListener('fullscreenchange',       () => setTimeout(resizeGame,
 document.addEventListener('webkitfullscreenchange', () => setTimeout(resizeGame, 120));
 resizeGame();
 
-// ── Sprite loading ─────────────────────────────────────────────────────────────
-(function loadSprites() {
-  const boy = new Image();
-  boy.onload = () => { media.playerImage = boy; };
-  boy.src = 'resources/boy.png';
-
-  const girl = new Image();
-  girl.onload = () => { media.girlImage = girl; };
-  girl.src = 'resources/girl.png';
-})();
+// ── Sprite loading — deferred below via Promise.all ────────────────────────────
 
 // ── Fullscreen ─────────────────────────────────────────────────────────────────
 function fsElement() { return document.fullscreenElement || document.webkitFullscreenElement; }
@@ -79,8 +71,7 @@ function maybeStartBgMusic() {
 // ── Welcome modal ──────────────────────────────────────────────────────────────
 const welcomeModal = document.getElementById('welcome-modal');
 if (IS_TOUCH) {
-  document.getElementById('btn-start').addEventListener('pointerdown', e => {
-    e.preventDefault();
+  document.getElementById('btn-start').addEventListener('click', () => {
     resumeAudio();
     maybeStartBgMusic();
     enterFullscreen();
@@ -133,6 +124,39 @@ document.getElementById('btn-restart').addEventListener('pointerdown', e => {
   syncUI();
 });
 
+// ── Settings panel ─────────────────────────────────────────────────────────────
+const panelSettings = document.getElementById('settings-panel');
+const togMusic      = document.getElementById('tog-music');
+const togSfx        = document.getElementById('tog-sfx');
+
+function syncSettingsUI() {
+  togMusic.textContent = settings.music ? 'ON' : 'OFF';
+  togMusic.classList.toggle('off', !settings.music);
+  togSfx.textContent = settings.sfx ? 'ON' : 'OFF';
+  togSfx.classList.toggle('off', !settings.sfx);
+}
+syncSettingsUI();
+
+document.getElementById('btn-settings').addEventListener('click', () => {
+  syncSettingsUI();
+  panelSettings.classList.toggle('hidden');
+});
+document.getElementById('btn-settings-close').addEventListener('click', () => {
+  panelSettings.classList.add('hidden');
+});
+togMusic.addEventListener('click', () => {
+  settings.music = !settings.music;
+  saveSettings();
+  syncSettingsUI();
+  setBgMusicMuted(gameState.quizActive || gameState.gameOver ||
+                  gameState.gameWon    || gameState.levelComplete);
+});
+togSfx.addEventListener('click', () => {
+  settings.sfx = !settings.sfx;
+  saveSettings();
+  syncSettingsUI();
+});
+
 // ── Game loop ──────────────────────────────────────────────────────────────────
 function loop() {
   update();
@@ -160,6 +184,16 @@ function loop() {
   requestAnimationFrame(loop);
 }
 
-canvas.focus();
-canvas.addEventListener('click', () => canvas.focus());
-loop();
+// ── Sprite preload — start loop only after both images are ready ───────────────
+const _boyImg  = new Image();
+const _girlImg = new Image();
+Promise.all([
+  new Promise(res => { _boyImg.onload  = res; _boyImg.onerror  = res; _boyImg.src  = 'resources/boy.png'; }),
+  new Promise(res => { _girlImg.onload = res; _girlImg.onerror = res; _girlImg.src = 'resources/girl.png'; }),
+]).then(() => {
+  media.playerImage = _boyImg;
+  media.girlImage   = _girlImg;
+  canvas.focus();
+  canvas.addEventListener('click', () => canvas.focus());
+  loop();
+});
