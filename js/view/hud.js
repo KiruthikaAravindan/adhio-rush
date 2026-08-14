@@ -1,7 +1,8 @@
 import { ctx } from '../canvas.js';
 import { CANVAS_W, CANVAS_H } from '../constants.js';
-import { gameState } from '../model/state.js';
+import { gameState, caesar } from '../model/state.js';
 import { coins } from '../model/level.js';
+
 export function syncUI() {
   const score = gameState.score;
   const best  = Math.max(gameState.bestScore, score);
@@ -13,7 +14,6 @@ export function syncUI() {
   document.getElementById('level').textContent       = gameState.currentLevel;
 }
 
-// Kill-score progress bar — thin strip drawn on canvas just below the HUD strip
 export function drawPowerupHud() {
   if (!gameState.powerupActive) return;
   const pct  = Math.max(0, gameState.powerupTimer / 300);
@@ -45,15 +45,51 @@ export function drawKillBar() {
   if (gameState.killScore === 0 && gameState.killBarFlash === 0) return;
   const pct  = Math.min(1, gameState.killScore / gameState.killThreshold);
   const barY = 38;
-  // Track background
   ctx.fillStyle = 'rgba(255,50,80,0.18)';
   ctx.fillRect(0, barY, CANVAS_W, 3);
-  // Fill
   if (pct > 0 || gameState.killBarFlash > 0) {
     ctx.fillStyle = gameState.killBarFlash > 0 ? '#FFD700' : '#ff4466';
     ctx.fillRect(0, barY, gameState.killBarFlash > 0 ? CANVAS_W : CANVAS_W * pct, 3);
   }
   if (gameState.killBarFlash > 0) gameState.killBarFlash--;
+}
+
+export function drawCaesarHud() {
+  if (!caesar.active || gameState.quizActive || gameState.levelComplete ||
+      gameState.gameOver || gameState.gameWon || gameState.celebrating) return;
+
+  // Mutually exclusive: pet requires !met, treat requires met/roaming
+  const showPet   = gameState.caesarNear && !caesar.met && !caesar.roaming;
+  const showTreat = (caesar.met || caesar.roaming) && gameState.currentLevel >= 3;
+  if (!showPet && !showTreat) return;
+
+  ctx.save();
+  ctx.textAlign    = 'center';
+  ctx.textBaseline = 'middle';
+  const cx = CANVAS_W / 2;
+  const y  = CANVAS_H - 24;
+
+  if (showPet) {
+    ctx.globalAlpha = 0.88;
+    ctx.fillStyle   = 'rgba(0,0,0,0.62)';
+    ctx.fillRect(cx - 78, y - 12, 156, 24);
+    ctx.fillStyle = '#FFD700';
+    ctx.font      = 'bold 12px Courier New';
+    ctx.fillText('[E]  Pet Caesar  🐾', cx, y);
+  }
+
+  if (showTreat) {
+    const canUse    = gameState.treats > 0 && caesar.catchTimer <= 0;
+    ctx.globalAlpha = canUse ? 0.90 : 0.40;
+    ctx.fillStyle   = 'rgba(0,0,0,0.62)';
+    ctx.fillRect(cx - 88, y - 12, 176, 24);
+    ctx.fillStyle = canUse ? '#ff9900' : '#888';
+    ctx.font      = 'bold 12px Courier New';
+    ctx.fillText(`[F]  Treat 🐟 (${gameState.treats})`, cx, y);
+  }
+
+  ctx.globalAlpha = 1;
+  ctx.restore();
 }
 
 export function drawLevelComplete() {

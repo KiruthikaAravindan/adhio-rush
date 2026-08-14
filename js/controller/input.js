@@ -6,6 +6,7 @@ const KC = {
   32: 'Space',      13: 'Enter',
   37: 'ArrowLeft',  38: 'ArrowUp', 39: 'ArrowRight', 40: 'ArrowDown',
   65: 'KeyA', 68: 'KeyD', 83: 'KeyS', 87: 'KeyW', 82: 'KeyR',
+  69: 'KeyE', 70: 'KeyF',
 };
 
 export function clearKeys() { for (const k in keys) keys[k] = false; }
@@ -45,7 +46,7 @@ if (!IS_TOUCH) {
     .forEach(a => imeEl.setAttribute(a, 'off'));
   document.body.appendChild(imeEl);
 
-  const IME_MAP = { ' ': 'Space', 'a': 'KeyA', 'd': 'KeyD', 'w': 'KeyW', 's': 'KeyS', 'r': 'KeyR' };
+  const IME_MAP = { ' ': 'Space', 'a': 'KeyA', 'd': 'KeyD', 'w': 'KeyW', 's': 'KeyS', 'r': 'KeyR', 'e': 'KeyE', 'f': 'KeyF' };
   const imeQueue = [];
 
   window.addEventListener('keydown', e => {
@@ -90,7 +91,9 @@ function bindBtn(id, code) {
   el.addEventListener('pointerleave',  release);
   el.addEventListener('pointercancel', release);
 }
-bindBtn('btn-jump', 'Space');
+bindBtn('btn-jump',  'Space');
+bindBtn('btn-pet',   'KeyE');
+bindBtn('btn-treat', 'KeyF');
 
 // ── Virtual joystick (Option C) — drag left/right to move ───────────────────────
 const joy  = document.getElementById('joystick');
@@ -142,3 +145,7 @@ export const isJump    = () => keys['Space'] || keys['ArrowUp'] || keys['KeyW'] 
 export const isLeft    = () => keys['ArrowLeft']  || keys['KeyA'];
 export const isRight   = () => keys['ArrowRight'] || keys['KeyD'];
 export const isRestart = () => keys['KeyR'] || keys['Space'] || keys['Enter'];
+
+// One-shot consumers — read true once, then reset to false
+export function consumePet()   { const v = !!keys['KeyE']; keys['KeyE'] = false; return v; }
+export function consumeTreat() { const v = !!keys['KeyF']; keys['KeyF'] = false; return v; }

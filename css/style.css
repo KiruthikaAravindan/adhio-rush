@@ -384,3 +384,25 @@ body.is-touch .mobile-menu-actions { display: flex; }
 }
 .level-btn:hover  { background: #2a2a6a; }
 .level-btn.active { background: #3a1a6a; border-color: #9966ff; color: #fff; }
+
+/* ── Caesar companion touch buttons ── */
+.tbtn.hidden   { display: none !important; }
+.tbtn.disabled { opacity: 0.35; pointer-events: none; }
+
+.tbtn-pet {
+  bottom: 132px; right: 94px;
+  width: 68px; height: 68px;
+  font-size: 26px;
+  background: rgba(255,215,0,0.15);
+  border-color: rgba(255,215,0,0.50);
+}
+.tbtn-pet:active, .tbtn-pet.pressed { background: rgba(255,215,0,0.45); }
+
+.tbtn-treat {
+  bottom: 132px; right: 18px;
+  width: 68px; height: 68px;
+  font-size: 26px;
+  background: rgba(255,120,0,0.15);
+  border-color: rgba(255,120,0,0.50);
+}
+.tbtn-treat:active, .tbtn-treat.pressed { background: rgba(255,120,0,0.45); }

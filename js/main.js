@@ -2,7 +2,7 @@ import { canvas, ctx } from './canvas.js';
 import { CANVAS_W, CANVAS_H } from './constants.js';
 import { resumeAudio, startBgMusic, setBgMusicMuted, SFX } from './audio.js';
 import { settings, saveSettings } from './model/settings.js';
-import { gameState, media } from './model/state.js';
+import { gameState, caesar, media } from './model/state.js';
 import { platforms, coins, enemies, prizeBoxes, pigeons, boxItems } from './model/level.js';
 import './controller/input.js';
 import { resetGame, nextLevel, jumpToLevel } from './controller/physics.js';
@@ -11,7 +11,7 @@ import {
   drawBg, drawPlatform, drawNote, drawEnemy, drawPigeon,
   drawPrizeBox, drawBoxItem, drawPlayer, drawGirl, drawParticles, drawCaesar,
 } from './view/draw.js';
-import { syncUI, drawOverlay, drawLevelComplete, drawQuiz, drawKillBar, drawPowerupHud } from './view/hud.js';
+import { syncUI, drawOverlay, drawLevelComplete, drawQuiz, drawKillBar, drawPowerupHud, drawCaesarHud } from './view/hud.js';
 
 // ── Touch-device detection ─────────────────────────────────────────────────────
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches;
@@ -150,6 +150,45 @@ function syncLevelBtns() {
 });
 syncLevelBtns();
 
+// ── Caesar companion buttons + treat shop ─────────────────────────────────────
+function syncCaesarBtns() {
+  const btnPet      = document.getElementById('btn-pet');
+  const btnTreat    = document.getElementById('btn-treat');
+  const treatCount  = document.getElementById('treat-count');
+  const btnBuyTreat = document.getElementById('btn-buy-treat');
+  const n = gameState.currentLevel;
+
+  if (treatCount) treatCount.textContent = gameState.treats;
+
+  if (btnPet) {
+    const visible = caesar.active && n >= 2 && n <= 3 && !caesar.met;
+    btnPet.classList.toggle('hidden',   !visible);
+    btnPet.classList.toggle('disabled', !gameState.caesarNear);
+  }
+  if (btnTreat) {
+    const visible = caesar.active && n >= 3 && (caesar.met || caesar.roaming);
+    btnTreat.classList.toggle('hidden',   !visible);
+    btnTreat.classList.toggle('disabled', gameState.treats <= 0 || caesar.catchTimer > 0);
+  }
+  if (btnBuyTreat) {
+    const canBuy = n >= 4 && gameState.treats < 5 && gameState.score >= 300;
+    btnBuyTreat.disabled = !canBuy;
+    btnBuyTreat.style.opacity = canBuy ? '1' : '0.45';
+  }
+}
+
+const btnBuyTreat = document.getElementById('btn-buy-treat');
+if (btnBuyTreat) {
+  btnBuyTreat.addEventListener('click', () => {
+    if (gameState.currentLevel >= 4 && gameState.score >= 300 && gameState.treats < 5) {
+      gameState.score -= 300;
+      gameState.treats++;
+      syncUI();
+      syncCaesarBtns();
+    }
+  });
+}
+
 // ── Mobile-only panel actions ─────────────────────────────────────────────────
 if (IS_TOUCH) {
   document.getElementById('btn-panel-fs').addEventListener('pointerdown', e => {
@@ -255,7 +294,9 @@ function loop() {
   drawParticles();
   drawKillBar();
   drawPowerupHud();
+  drawCaesarHud();
   syncUI();
+  syncCaesarBtns();
   if (gameState.quizActive)                    drawQuiz();
   if (gameState.levelComplete)                 drawLevelComplete();
   if (gameState.gameOver || gameState.gameWon) drawOverlay();

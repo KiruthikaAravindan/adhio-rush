@@ -411,12 +411,77 @@ export function drawCaesar() {
 
   const w = caesar.w, h = caesar.h;
   const flip = caesar.facing === -1;
+  const celebBounce = gameState.celebrating && (caesar.met || caesar.roaming)
+    ? -Math.abs(Math.sin(Date.now() / 200)) * 12 : 0;
+  const baseY = caesar.y + celebBounce;
+
+  // ── Proximity glow ring (L2-3, before petting) ──
+  if (gameState.caesarNear && !caesar.roaming) {
+    const pulse = 0.15 + 0.1 * Math.sin(Date.now() / 200);
+    ctx.save();
+    ctx.globalAlpha = pulse;
+    ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(cx + w / 2, baseY + h / 2, w * 0.9, 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = 1; ctx.restore();
+  }
+
+  // ── Enhanced aura (treat mode active) ──
+  if (caesar.enhanced && caesar.catchTimer > 0) {
+    const pulse = 0.12 + 0.08 * Math.sin(Date.now() / 150);
+    ctx.save();
+    ctx.globalAlpha = pulse;
+    ctx.strokeStyle = '#ff9900'; ctx.lineWidth = 4;
+    ctx.beginPath(); ctx.arc(cx + w / 2, baseY + h / 2, w * 1.1, 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = 1; ctx.restore();
+  }
+
+  // ── CURLED pose (sleeping ball, before found in L2-3) ──
+  if (caesar.curled) {
+    ctx.save();
+    ctx.translate(cx + w / 2, baseY + h * 0.55);
+    // Body ball
+    ctx.fillStyle = '#e08830';
+    ctx.beginPath(); ctx.arc(0, 0, w * 0.42, 0, Math.PI * 2); ctx.fill();
+    // Belly patch
+    ctx.fillStyle = '#f5c880';
+    ctx.beginPath(); ctx.arc(0, h * 0.06, w * 0.25, 0, Math.PI * 2); ctx.fill();
+    // Stripe
+    ctx.strokeStyle = '#8b4400'; ctx.lineWidth = 1.5; ctx.globalAlpha = 0.4;
+    ctx.beginPath(); ctx.arc(0, 0, w * 0.28, 0.3, Math.PI * 0.8); ctx.stroke();
+    ctx.globalAlpha = 1;
+    // Tail curled around
+    ctx.strokeStyle = '#b86010'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(w * 0.1, h * 0.04, w * 0.38, 0.2, Math.PI * 1.7); ctx.stroke();
+    // Ear nubs
+    ctx.fillStyle = '#e08830';
+    ctx.beginPath(); ctx.moveTo(-w*0.1, -w*0.38); ctx.lineTo(-w*0.2, -w*0.52); ctx.lineTo(0, -w*0.42); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(w*0.12, -w*0.36); ctx.lineTo(w*0.24, -w*0.50); ctx.lineTo(w*0.28, -w*0.36); ctx.closePath(); ctx.fill();
+    // Sleepy eye lines
+    ctx.strokeStyle = '#332200'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(-w*0.14, -w*0.06); ctx.lineTo(-w*0.04, -w*0.06); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(w*0.04, -w*0.06); ctx.lineTo(w*0.14, -w*0.06); ctx.stroke();
+    ctx.restore();
+    // Zzz
+    ctx.save();
+    ctx.fillStyle = '#aaeeff'; ctx.font = 'bold 8px Arial';
+    ctx.textAlign = flip ? 'right' : 'left';
+    const zx = cx + (flip ? -2 : w + 2);
+    const zy = baseY - 4 + Math.sin(Date.now() / 500) * 2;
+    ctx.fillText('z', zx, zy);
+    ctx.fillText('z', zx + (flip ? -4 : 4), zy - 5);
+    ctx.fillText('Z', zx + (flip ? -9 : 9), zy - 11);
+    ctx.restore();
+    return;
+  }
+
+  // ── Normal / sit / active pose ──
+  const isSitting = caesar.roaming && caesar.idleTimer > 130 && caesar.catchTimer <= 0;
 
   ctx.save();
-  ctx.translate(cx + (flip ? w : 0), caesar.y);
+  ctx.translate(cx + (flip ? w : 0), baseY);
   if (flip) ctx.scale(-1, 1);
 
-  // ── Tail — fluffy curved ──
+  // Tail
   ctx.strokeStyle = '#b86010'; ctx.lineWidth = 4;
   ctx.beginPath();
   ctx.moveTo(w * 0.08, h * 0.55);
@@ -428,30 +493,28 @@ export function drawCaesar() {
   ctx.bezierCurveTo(w * -0.35, h * 0.30, w * -0.55, h * -0.10, w * -0.20, h * -0.28);
   ctx.stroke();
 
-  // ── Body — fat fluffy orange ellipse ──
+  // Body
+  const bodyTiltY = isSitting ? -h * 0.08 : 0;
   ctx.fillStyle = '#e08830';
   ctx.beginPath();
-  ctx.ellipse(w * 0.50, h * 0.58, w * 0.44, h * 0.40, 0, 0, Math.PI * 2);
+  ctx.ellipse(w * 0.50, h * 0.58 + bodyTiltY, w * 0.44, h * (isSitting ? 0.38 : 0.40), isSitting ? -0.2 : 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // ── Belly (lighter) ──
+  // Belly
   ctx.fillStyle = '#f5c880';
   ctx.beginPath();
-  ctx.ellipse(w * 0.52, h * 0.64, w * 0.24, h * 0.26, 0, 0, Math.PI * 2);
+  ctx.ellipse(w * 0.52, h * 0.64 + bodyTiltY, w * 0.24, h * 0.26, 0, 0, Math.PI * 2);
   ctx.fill();
 
-  // ── Mackerel tabby stripes on body ──
+  // Stripes
   ctx.strokeStyle = '#8b4400'; ctx.lineWidth = 1.5;
   for (const sx of [0.26, 0.42, 0.62, 0.76]) {
     ctx.globalAlpha = 0.45;
-    ctx.beginPath();
-    ctx.moveTo(w * sx, h * 0.20);
-    ctx.lineTo(w * (sx - 0.05), h * 0.80);
-    ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(w * sx, h * 0.20 + bodyTiltY); ctx.lineTo(w * (sx - 0.05), h * 0.80 + bodyTiltY); ctx.stroke();
   }
   ctx.globalAlpha = 1.0;
 
-  // ── Ears ──
+  // Ears
   ctx.fillStyle = '#e08830';
   ctx.beginPath(); ctx.moveTo(w*0.60,h*0.08); ctx.lineTo(w*0.52,h*-0.14); ctx.lineTo(w*0.72,h*0.04); ctx.closePath(); ctx.fill();
   ctx.beginPath(); ctx.moveTo(w*0.84,h*0.04); ctx.lineTo(w*0.94,h*-0.12); ctx.lineTo(w*0.97,h*0.08); ctx.closePath(); ctx.fill();
@@ -459,21 +522,20 @@ export function drawCaesar() {
   ctx.beginPath(); ctx.moveTo(w*0.62,h*0.07); ctx.lineTo(w*0.55,h*-0.07); ctx.lineTo(w*0.71,h*0.05); ctx.closePath(); ctx.fill();
   ctx.beginPath(); ctx.moveTo(w*0.85,h*0.05); ctx.lineTo(w*0.92,h*-0.06); ctx.lineTo(w*0.95,h*0.07); ctx.closePath(); ctx.fill();
 
-  // ── Head ──
+  // Head
   ctx.fillStyle = '#e08830';
   ctx.beginPath(); ctx.arc(w * 0.76, h * 0.28, w * 0.27, 0, Math.PI * 2); ctx.fill();
 
-  // ── Forehead stripes ──
-  ctx.strokeStyle = '#8b4400'; ctx.lineWidth = 1;
-  ctx.globalAlpha = 0.4;
+  // Forehead stripes
+  ctx.strokeStyle = '#8b4400'; ctx.lineWidth = 1; ctx.globalAlpha = 0.4;
   for (const ox of [-0.05, 0.05]) {
     ctx.beginPath(); ctx.moveTo(w*(0.76+ox), h*0.02); ctx.lineTo(w*(0.76+ox*0.6), h*0.16); ctx.stroke();
   }
   ctx.globalAlpha = 1.0;
 
-  // ── Eyes ──
-  if (caesar.petTimer > 0) {
-    // Happy closed arcs when being petted
+  // Eyes
+  if (caesar.petTimer > 0 || isSitting) {
+    // Happy squint / sitting look
     ctx.strokeStyle = '#332200'; ctx.lineWidth = 1.8;
     ctx.beginPath(); ctx.arc(w*0.68, h*0.26, 4.5, Math.PI, Math.PI*2); ctx.stroke();
     ctx.beginPath(); ctx.arc(w*0.86, h*0.26, 4.5, Math.PI, Math.PI*2); ctx.stroke();
@@ -490,11 +552,11 @@ export function drawCaesar() {
     ctx.beginPath(); ctx.arc(w*0.86, h*0.26, 2.2, 0, Math.PI*2); ctx.fill();
   }
 
-  // ── Nose ──
+  // Nose
   ctx.fillStyle = '#ff8888';
   ctx.beginPath(); ctx.arc(w*0.77, h*0.33, 2.2, 0, Math.PI*2); ctx.fill();
 
-  // ── Whiskers ──
+  // Whiskers
   ctx.strokeStyle = '#fff'; ctx.lineWidth = 0.8; ctx.globalAlpha = 0.75;
   ctx.beginPath(); ctx.moveTo(w*0.72,h*0.33); ctx.lineTo(w*0.48,h*0.31); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(w*0.72,h*0.36); ctx.lineTo(w*0.48,h*0.38); ctx.stroke();
@@ -502,50 +564,47 @@ export function drawCaesar() {
   ctx.beginPath(); ctx.moveTo(w*0.82,h*0.36); ctx.lineTo(w*1.04,h*0.38); ctx.stroke();
   ctx.globalAlpha = 1.0;
 
-  // ── Paws (walking animation) ──
-  const swing = caesar.walkFrame === 0 ? 2 : -2;
+  // Paws
+  const swing = isSitting ? 0 : (caesar.walkFrame === 0 ? 2 : -2);
+  const pawY  = isSitting ? h * 1.06 : h * 0.98;
   ctx.fillStyle = '#e08830';
-  ctx.beginPath(); ctx.ellipse(w*0.28+swing, h*0.98, 8, 5, 0, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(w*0.58-swing, h*0.98, 8, 5, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(w*0.28+swing, pawY, 8, 5, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(w*0.58-swing, pawY, 8, 5, 0, 0, Math.PI*2); ctx.fill();
   ctx.fillStyle = '#f5c880';
-  ctx.beginPath(); ctx.ellipse(w*0.28+swing, h*0.99, 5, 3, 0, 0, Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.ellipse(w*0.58-swing, h*0.99, 5, 3, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(w*0.28+swing, pawY, 5, 3, 0, 0, Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(w*0.58-swing, pawY, 5, 3, 0, 0, Math.PI*2); ctx.fill();
 
   ctx.restore();
 
-  // ── Sleeping zzz ──
+  // Sleeping zzz (post-catchTimer)
   if (caesar.sleeping) {
-    const t = Date.now();
     const zx = cx + (flip ? -6 : w + 6);
-    const zy = caesar.y - 8 + Math.sin(t / 500) * 2;
+    const zy = baseY - 8 + Math.sin(Date.now() / 500) * 2;
     ctx.save();
     ctx.fillStyle = '#aaeeff'; ctx.font = 'bold 9px Arial';
     ctx.textAlign = flip ? 'right' : 'left';
-    ctx.fillText('z',  zx,       zy);
+    ctx.fillText('z',  zx, zy);
     ctx.fillText('z',  zx + (flip ? -5 : 5),  zy - 6);
-    ctx.fillText('Z',  zx + (flip ? -11: 11), zy - 13);
+    ctx.fillText('Z',  zx + (flip ? -11 : 11), zy - 13);
     ctx.restore();
   }
 
-  // ── Petting hearts ──
+  // Petting hearts
   if (caesar.petTimer > 0) {
-    const t = Date.now();
-    const hx = cx + w / 2;
-    const hy = caesar.y - 14 + Math.sin(t / 180) * 3;
     ctx.save();
     ctx.font = 'bold 13px Arial'; ctx.textAlign = 'center';
-    ctx.fillText('💛', hx, hy);
+    ctx.fillText('💛', cx + w / 2, baseY - 14 + Math.sin(Date.now() / 180) * 3);
     ctx.restore();
   }
 
-  // ── Active catch glow ring ──
+  // Active catch glow ring
   if (caesar.catchTimer > 0 && !caesar.sleeping) {
     const pct = caesar.catchTimer / 600;
     ctx.save();
     ctx.globalAlpha = pct * 0.22;
-    ctx.strokeStyle = '#ff9900'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(cx + w/2, caesar.y + h/2, 140, 0, Math.PI*2); ctx.stroke();
-    ctx.globalAlpha = 1;
-    ctx.restore();
+    ctx.strokeStyle = caesar.enhanced ? '#ff9900' : '#ffcc44';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(cx + w/2, baseY + h/2, 140, 0, Math.PI*2); ctx.stroke();
+    ctx.globalAlpha = 1; ctx.restore();
   }
 }

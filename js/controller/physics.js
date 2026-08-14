@@ -72,15 +72,49 @@ const LEVEL_WORLD_W      = [0, 3200, 4700, 5200, 5700, 6200];
 const LEVEL_PIGEON_BASE  = [0,    0,  480,  400,  320,  260];
 
 function applyCaesarForLevel(n) {
-  if (n >= 3) {
-    caesar.active = true;
-    caesar.x = 200; caesar.y = 368;
-    caesar.met = false; caesar.petTimer = 0;
-    caesar.catchTimer = 0; caesar.sleeping = false;
-    caesar.facing = 1; caesar.vx = 0;
-    caesar.walkFrame = 0; caesar.walkTimer = 0;
+  // Active from Level 2 onward
+  if (n < 2) { caesar.active = false; return; }
+
+  const worldW = LEVEL_WORLD_W[n] || 3200;
+  Object.assign(caesar, {
+    active:     true,
+    roaming:    n >= 4,
+    curled:     n <= 3,
+    met:        n >= 4,       // already bonded in L4+
+    petTimer:   0,
+    catchTimer: 0,
+    sleeping:   false,
+    enhanced:   false,
+    scrollSeen: false,
+    idleTimer:  0,
+    vy:         0,
+    onGround:   true,
+    facing:     1,
+    vx:         0,
+    walkFrame:  0,
+    walkTimer:  0,
+  });
+
+  if (n <= 3) {
+    // Random floating platform in the middle third of the level
+    const midStart = worldW * 0.33;
+    const midEnd   = worldW * 0.67;
+    const candidates = platforms.filter(p =>
+      p.h <= 25 &&
+      p.x + p.w / 2 >= midStart &&
+      p.x + p.w / 2 <= midEnd
+    );
+    if (candidates.length > 0) {
+      const p = candidates[Math.floor(Math.random() * candidates.length)];
+      caesar.x = Math.round(p.x + p.w / 2 - caesar.w / 2);
+      caesar.y = p.y - caesar.h;
+    } else {
+      caesar.x = Math.round(worldW / 2);
+      caesar.y = 368;
+    }
   } else {
-    caesar.active = false;
+    caesar.x = 60;
+    caesar.y = 368;
   }
 }
 
@@ -106,9 +140,13 @@ export function resetGame() {
   gameState.speedMult    = 1;
   gameState.powerupActive = null;
   gameState.powerupTimer  = 0;
+  gameState.treats        = 0;
+  gameState.caesarEverMet = false;
+  gameState.caesarNear    = false;
+  gameState.treatDropped  = false;
   clearQuiz();
-  applyCaesarForLevel(1);
   initLevel(1);
+  applyCaesarForLevel(1);
   resetPlayer();
 }
 
@@ -129,9 +167,11 @@ export function nextLevel() {
   gameState.speedMult        = 1;
   gameState.powerupActive    = null;
   gameState.powerupTimer     = 0;
+  gameState.caesarNear       = false;
+  gameState.treatDropped     = false;
   clearQuiz();
-  applyCaesarForLevel(next);
   initLevel(next);
+  applyCaesarForLevel(next);
   resetPlayer();
 }
 
@@ -157,8 +197,11 @@ export function jumpToLevel(n) {
   gameState.speedMult        = 1;
   gameState.powerupActive    = null;
   gameState.powerupTimer     = 0;
+  gameState.treats           = 0;
+  gameState.caesarNear       = false;
+  gameState.treatDropped     = false;
   clearQuiz();
-  applyCaesarForLevel(n);
   initLevel(n);
+  applyCaesarForLevel(n);
   resetPlayer();
 }

@@ -1,8 +1,8 @@
 import { GRAVITY, CANVAS_W } from '../constants.js';
 import { gameState, player, particles, burst, burstHearts, floatText, commitBestScore, caesar } from '../model/state.js';
-import { coins, enemies, prizeBoxes, pigeons, boxItems, QUIZ_QUESTIONS } from '../model/level.js';
+import { coins, enemies, prizeBoxes, pigeons, boxItems, platforms, QUIZ_QUESTIONS } from '../model/level.js';
 import { SFX } from '../audio.js';
-import { isJump, isLeft, isRight, isRestart } from './input.js';
+import { isJump, isLeft, isRight, isRestart, consumePet, consumeTreat } from './input.js';
 import { overlap, playerHit, resolveVsWorld, resetPlayer, resetGame, nextLevel } from './physics.js';
 
 const SPEED = 5.5;
@@ -105,6 +105,13 @@ function hitBox(b) {
   let reward, symbol, color;
   if (b.type === 'quiz') {
     reward = 'quiz'; symbol = '?'; color = '#FFD700';
+    // First quiz box hit in L2 or L3 drops a treat
+    if ((gameState.currentLevel === 2 || gameState.currentLevel === 3) &&
+        !gameState.treatDropped && gameState.treats < 5) {
+      gameState.treatDropped = true;
+      gameState.treats++;
+      floatText(b.x + b.w / 2, b.y - 36, '🐟 +1 TREAT!', '#ff9900');
+    }
   } else if (b.type === 'danger') {
     reward = 'danger'; symbol = '☠'; color = '#ff4444';
   } else {
@@ -169,6 +176,16 @@ export function update(dt) {
       gameState.celebrating = false;
       if (gameState.currentLevel < 5) { gameState.levelComplete = true; SFX.levelComplete(); }
       else                            { gameState.gameWon = true; SFX.win(); }
+    }
+    // Caesar hops toward player during celebration
+    if (caesar.active && (caesar.met || caesar.roaming)) {
+      const targetX = player.x - 44;
+      const dx = targetX - caesar.x;
+      if (Math.abs(dx) > 6) {
+        caesar.x += Math.sign(dx) * Math.min(Math.abs(dx) * 0.09, 2.5) * dt;
+        caesar.facing = dx > 0 ? 1 : -1;
+      }
+      caesar.x = Math.max(0, Math.min(caesar.x, gameState.worldW - caesar.w));
     }
     return;
   }
@@ -358,43 +375,118 @@ export function update(dt) {
 
   // ── Caesar the cat ──────────────────────────────────────────────────────────
   if (caesar.active) {
-    // Follow the player, staying slightly behind
-    const targetX = player.x - 55;
-    const dx = targetX - caesar.x;
-    caesar.vx = Math.sign(dx) * Math.min(Math.abs(dx) * 0.12, 3.5);
-    caesar.x += caesar.vx * dt;
-    if (Math.abs(caesar.vx) > 0.1) caesar.facing = caesar.vx > 0 ? 1 : -1;
-    caesar.x = Math.max(0, Math.min(caesar.x, gameState.worldW - caesar.w));
 
-    // Walk animation
-    if (Math.abs(caesar.vx) > 0.3) {
-      caesar.walkTimer += dt;
-      if (caesar.walkTimer > 10) { caesar.walkFrame = (caesar.walkFrame + 1) % 2; caesar.walkTimer = 0; }
-    } else {
-      caesar.walkFrame = 0;
+    // Paw-print cue when Caesar first scrolls into view (L2-3, before found)
+    if (!caesar.scrollSeen && caesar.curled) {
+      const cxScreen = caesar.x - gameState.cameraX;
+      if (cxScreen >= -10 && cxScreen < CANVAS_W) {
+        caesar.scrollSeen = true;
+        if (!gameState.caesarEverMet) floatText(caesar.x, caesar.y - 24, '🐾', '#ffcc00');
+      }
     }
-    if (caesar.petTimer > 0) caesar.petTimer -= dt;
 
-    // First meeting — player touches Caesar → petting interaction
-    if (!caesar.met && overlap(ph, caesar)) {
-      caesar.met = true;
-      caesar.petTimer = 90;
-      caesar.catchTimer = 600; // 10 seconds active
-      caesar.sleeping = false;
+    // Proximity flag (drives pet button state + proximity glow in draw)
+    if (!caesar.roaming && !caesar.met) {
+      gameState.caesarNear = Math.hypot(
+        player.x + player.w / 2 - caesar.x - caesar.w / 2,
+        player.y + player.h / 2 - caesar.y - caesar.h / 2
+      ) < 65;
+    } else {
+      gameState.caesarNear = false;
+    }
+
+    // Pet (L2-3: once per level — basic mode, ground only)
+    if (gameState.caesarNear && consumePet()) {
+      caesar.curled     = false;
+      caesar.met        = true;
+      caesar.catchTimer = 600;
+      caesar.enhanced   = false;
+      caesar.sleeping   = false;
+      caesar.petTimer   = 90;
+      gameState.caesarEverMet = true;
       SFX.prize();
       floatText(caesar.x + caesar.w / 2, caesar.y - 12, 'PAT PAT! ♥', '#FFD700');
       burst(caesar.x + caesar.w / 2, caesar.y, '#FFD700', 8);
-      burst(caesar.x + caesar.w / 2, caesar.y, '#ff9900', 6);
+      burst(caesar.x + caesar.w / 2, caesar.y, '#ff9900', 5);
     }
+
+    // Treat (L3+: enhanced mode — also catches flying pigeons + jumps)
+    if ((caesar.met || caesar.roaming) && gameState.currentLevel >= 3 &&
+        gameState.treats > 0 && caesar.catchTimer <= 0 && consumeTreat()) {
+      gameState.treats--;
+      caesar.catchTimer = 600;
+      caesar.enhanced   = true;
+      caesar.sleeping   = false;
+      caesar.petTimer   = 60;
+      SFX.prize();
+      floatText(caesar.x + caesar.w / 2, caesar.y - 14, '🐟 NOM NOM!', '#ff9900');
+      burst(caesar.x + caesar.w / 2, caesar.y, '#ff9900', 10);
+    }
+
+    // Gravity
+    if (!caesar.onGround) caesar.vy = Math.min(caesar.vy + GRAVITY * dt, 16);
+    caesar.y += caesar.vy * dt;
+
+    // Platform resolution
+    caesar.onGround = false;
+    for (const p of platforms) {
+      if (caesar.x + caesar.w <= p.x || caesar.x >= p.x + p.w) continue;
+      if (caesar.vy >= 0 && caesar.y + caesar.h > p.y && caesar.y + caesar.h < p.y + p.h + 15) {
+        caesar.y = p.y - caesar.h;
+        caesar.vy = 0;
+        caesar.onGround = true;
+      }
+    }
+    if (caesar.y >= 368) { caesar.y = 368; caesar.vy = 0; caesar.onGround = true; }
+
+    // Roaming follow (L4+)
+    if (caesar.roaming) {
+      if (Math.abs(player.vx) < 0.3 && player.onGround) {
+        caesar.idleTimer = Math.min(caesar.idleTimer + dt, 200);
+      } else {
+        caesar.idleTimer = Math.max(caesar.idleTimer - dt * 2, 0);
+      }
+      // Jump up to player's platform when enhanced
+      if (caesar.enhanced && caesar.onGround && player.y < caesar.y - 25) {
+        const pNear = platforms.find(p =>
+          p.h <= 25 &&
+          Math.abs(p.y - caesar.h - player.y) < 22 &&
+          p.x < caesar.x + 90 && p.x + p.w > caesar.x - 50
+        );
+        if (pNear) { caesar.vy = -9; caesar.onGround = false; }
+      }
+      const targetX = player.x - 55;
+      const dx = targetX - caesar.x;
+      caesar.vx = caesar.idleTimer < 130
+        ? Math.sign(dx) * Math.min(Math.abs(dx) * 0.12, 3.5)
+        : caesar.vx * Math.pow(0.85, dt);
+      caesar.x += caesar.vx * dt;
+      if (Math.abs(caesar.vx) > 0.1) caesar.facing = caesar.vx > 0 ? 1 : -1;
+      caesar.x = Math.max(0, Math.min(caesar.x, gameState.worldW - caesar.w));
+    }
+
+    if (caesar.petTimer > 0) caesar.petTimer -= dt;
 
     // Active catch window
     if (caesar.catchTimer > 0) {
       caesar.catchTimer -= dt;
       const RANGE = 140;
 
-      // Catch nearby pigeons
+      // Enhanced: jump toward nearby flying pigeons
+      if (caesar.enhanced && caesar.onGround) {
+        for (const pg of pigeons) {
+          if (pg.y < 310 && Math.abs(pg.x + pg.w / 2 - caesar.x - caesar.w / 2) < 110) {
+            caesar.vy = -10; caesar.onGround = false;
+            caesar.facing = pg.x > caesar.x ? 1 : -1;
+            break;
+          }
+        }
+      }
+
+      // Pigeon catch
       for (let i = pigeons.length - 1; i >= 0; i--) {
         const pg = pigeons[i];
+        if (pg.y < 310 && !caesar.enhanced) continue; // flying pigeons only in enhanced mode
         const dist = Math.hypot(
           pg.x + pg.w / 2 - caesar.x - caesar.w / 2,
           pg.y + pg.h / 2 - caesar.y - caesar.h / 2
@@ -408,7 +500,7 @@ export function update(dt) {
         }
       }
 
-      // Kill nearby enemies
+      // Enemy kill
       for (const e of enemies) {
         if (!e.alive || e.spawned) continue;
         const dist = Math.hypot(
@@ -425,8 +517,17 @@ export function update(dt) {
 
       if (caesar.catchTimer <= 0) {
         caesar.sleeping = true;
+        caesar.enhanced = false;
         floatText(caesar.x + caesar.w / 2, caesar.y - 10, 'zzz...', '#aaeeff');
       }
+    }
+
+    // Walk animation
+    if (Math.abs(caesar.vx) > 0.3) {
+      caesar.walkTimer += dt;
+      if (caesar.walkTimer > 10) { caesar.walkFrame = (caesar.walkFrame + 1) % 2; caesar.walkTimer = 0; }
+    } else {
+      caesar.walkFrame = 0;
     }
   }
 

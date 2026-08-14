@@ -53,6 +53,8 @@
         <div id="joy-knob"></div>
       </div>
       <button class="tbtn tbtn-jump" id="btn-jump">▲</button>
+      <button class="tbtn tbtn-pet hidden" id="btn-pet">🐾</button>
+      <button class="tbtn tbtn-treat hidden" id="btn-treat">🐟</button>
     </div>
 
     <button id="btn-action" class="hidden"></button>
@@ -67,6 +69,10 @@
       <div class="settings-row">
         <span>Sound FX</span>
         <button id="tog-sfx" class="tog-btn">ON</button>
+      </div>
+      <div class="settings-row" id="treat-shop-row">
+        <span>🐟 Treats: <span id="treat-count">0</span></span>
+        <button id="btn-buy-treat" class="tog-btn">Buy (300pts)</button>
       </div>
       <!-- DEV: level jump — remove before shipping -->
       <div class="settings-row" id="dev-level-row">

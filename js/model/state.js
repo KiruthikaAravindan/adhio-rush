@@ -49,6 +49,12 @@ export const gameState = {
   powerupActive: null,
   powerupTimer: 0,
   speedMult: 1,
+
+  // caesar companion
+  treats: 0,
+  caesarEverMet: false,
+  caesarNear: false,
+  treatDropped: false,
 };
 
 // Persist the best score once a run ends. Idempotent — safe to call each frame.
@@ -77,11 +83,18 @@ export const caesar = {
   active: false,
   x: 0, y: 368,
   w: 40, h: 32,
-  vx: 0, facing: 1,
+  vx: 0, vy: 0,
+  facing: 1,
+  onGround: true,
+  curled: true,      // sleeping ball before found (L2-3)
+  roaming: false,    // follows player (L4+)
   met: false,
   petTimer: 0,
   catchTimer: 0,
   sleeping: false,
+  enhanced: false,   // treat mode — jumps for flying pigeons
+  scrollSeen: false, // paw-print cue fired once on first scroll-in
+  idleTimer: 0,      // player stillness counter → sit pose
   walkFrame: 0, walkTimer: 0,
 };
 
