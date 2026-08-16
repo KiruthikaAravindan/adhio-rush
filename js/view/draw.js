@@ -92,7 +92,34 @@ export function drawEnemy(e) {
   if (ex + e.w < 0 || ex > CANVAS_W) return;
   const w = e.w, h = e.h;
   const goingLeft = e.vx < 0;
-  const legSwing  = e.walkFrame === 0 ? 3 : -3;
+
+  if (media.pigeonImage) {
+    const img = media.pigeonImage;
+    const IW  = img.naturalWidth  || img.width;
+    const IH  = img.naturalHeight || img.height;
+    // Row 0: walking pigeon, 8 equal columns, sprites face RIGHT
+    const col = e.walkFrame % 8;
+    const sx = col * IW / 8;
+    const sy = 0;
+    const sw = IW / 8;
+    const sh = IH / 3;
+    const renderW = Math.round(w * 1.8);
+    const renderH = Math.round(h * 1.8);
+    const rx = ex - (renderW - w) / 2;
+    const ry = e.y - (renderH - h) / 2;
+    ctx.save();
+    if (goingLeft) {
+      ctx.translate(rx + renderW, ry);
+      ctx.scale(-1, 1);
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, renderW, renderH);
+    } else {
+      ctx.drawImage(img, sx, sy, sw, sh, rx, ry, renderW, renderH);
+    }
+    ctx.restore();
+    return;
+  }
+
+  const legSwing = e.walkFrame % 2 === 0 ? 3 : -3;
 
   ctx.save();
   ctx.translate(ex + (goingLeft ? w : 0), e.y);
@@ -221,9 +248,9 @@ export function drawPigeon(pg) {
     const renderH = pg.h * 2;
     const rx = px  - (renderW - pg.w) / 2;
     const ry = pg.y - (renderH - pg.h) / 2;
-    const goesRight = pg.vx > 0;
+    const goesLeft = pg.vx < 0;
     ctx.save();
-    if (goesRight) {
+    if (goesLeft) {
       ctx.translate(rx + renderW, ry);
       ctx.scale(-1, 1);
       ctx.drawImage(img, sx, sy, sw, sh, 0, 0, renderW, renderH);
@@ -471,33 +498,28 @@ export function drawCaesar() {
 
   if (media.caesarImage) {
     const img = media.caesarImage;
-    const IW  = img.naturalWidth  || img.width;
-    const IH  = img.naturalHeight || img.height;
-    const RH  = IH / 4;
-    // Proportional layout — 4 equal-height rows:
-    //   Row 0: 4 cols – sit(0), standFront(1), walkA(2), walkB(3)     [all face RIGHT]
-    //   Row 1: 2 cols – runLeapL(0), trotL(1)                         [face LEFT — not used]
-    //   Row 2: 3 cols – jumpLeap(0), crouch(1), playing(2)            [all face RIGHT]
-    //   Row 3: 5 cols – loaf(0), lying(1), sleepCurl(2), sleepBack(3), happy(4)
-    let sx, sy, sw, sh;
+    // Hardcoded regions for 2056×765 sprite (transparent bg, two informal rows)
+    // Row 1 (sy 0,   sh 360): sit | stand | walkA | walkB | leapA | leapB | crouch
+    // Row 2 (sy 360, sh 405): loaf | lyingRelaxed | sleepCurl | bellyUp | playing | happy
+    let sx, sy, sw, sh, renderW, renderH;
     if (caesar.curled) {
-      [sx, sy, sw, sh] = [IW * 2 / 5, RH * 3, IW / 5, RH];             // sleepCurl
+      [sx, sy, sw, sh] = [579, 360, 283, 405]; [renderW, renderH] = [62, 36]; // sleepCurl
     } else if (caesar.sleeping) {
-      [sx, sy, sw, sh] = [IW * 3 / 5, RH * 3, IW / 5, RH];             // sleepBack
+      [sx, sy, sw, sh] = [278, 360, 301, 405]; [renderW, renderH] = [68, 34]; // lyingRelaxed
     } else if (caesar.petTimer > 0) {
-      [sx, sy, sw, sh] = [IW * 4 / 5, RH * 3, IW / 5, RH];             // happy/hearts
+      [sx, sy, sw, sh] = [1473, 360, 239, 405]; [renderW, renderH] = [48, 58]; // happy/hearts
     } else if (!caesar.onGround) {
-      [sx, sy, sw, sh] = [0, RH * 2, IW / 3, RH];                       // jumpLeap
+      [sx, sy, sw, sh] = [760, 0, 146, 360]; [renderW, renderH] = [58, 44];   // leapA
     } else if (caesar.enhanced && caesar.catchTimer > 0) {
-      [sx, sy, sw, sh] = [IW / 3, RH * 2, IW / 3, RH];                 // crouch/hunting
+      [sx, sy, sw, sh] = [1037, 0, 199, 360]; [renderW, renderH] = [54, 46];  // crouch/hunt
     } else if (caesar.idleTimer > 150 && Math.abs(caesar.vx) < 0.5) {
-      [sx, sy, sw, sh] = [0, 0, IW / 4, RH];                            // sit
+      [sx, sy, sw, sh] = [0, 0, 172, 360]; [renderW, renderH] = [40, 58];     // sit
     } else {
-      const step = caesar.walkFrame;                                      // 0 or 1
-      [sx, sy, sw, sh] = [(2 + step) * IW / 4, 0, IW / 4, RH];         // walkA / walkB
+      [sx, sy, sw, sh] = caesar.walkFrame === 0
+        ? [373, 0, 194, 360]   // walkA
+        : [567, 0, 193, 360];  // walkB
+      [renderW, renderH] = [52, 50];
     }
-    const renderW = Math.round(w * 2.2);
-    const renderH = Math.round(h * 2.8);
     const rx = cx - (renderW - w) / 2;
     const ry = baseY - (renderH - h);
     ctx.save();

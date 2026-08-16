@@ -276,7 +276,7 @@ body.is-touch #touch-controls {
 /* ── Action button — shown on game-over / level-complete (both desktop + mobile) ── */
 #btn-action {
   position: absolute;
-  bottom: 38px;
+  bottom: 64px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
