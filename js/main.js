@@ -17,7 +17,7 @@ import { syncUI, drawOverlay, drawLevelComplete, drawQuiz, drawKillBar, drawPowe
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches;
 if (IS_TOUCH) document.body.classList.add('is-touch');
 
-gameState.speedScale = IS_TOUCH ? 0.62 : 0.80;
+gameState.speedScale = IS_TOUCH ? 0.62 : 0.88;
 gameState.jumpScale  = IS_TOUCH ? 1.1 : 1;
 
 // ── Responsive scaling ─────────────────────────────────────────────────────────
@@ -198,7 +198,9 @@ function syncCaesarBtns() {
   const n = gameState.currentLevel;
 
   if (btnPet) {
-    const visible = caesar.active && n >= 2 && n <= 3 && !caesar.met;
+    const caesarOnScreen = (caesar.x - gameState.cameraX + caesar.w) >= 0 &&
+                           (caesar.x - gameState.cameraX) <= CANVAS_W;
+    const visible = caesar.active && n >= 2 && n <= 3 && !caesar.met && caesarOnScreen;
     btnPet.classList.toggle('hidden',   !visible);
     btnPet.classList.toggle('disabled', !gameState.caesarNear);
   }

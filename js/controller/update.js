@@ -308,7 +308,7 @@ export function update(dt) {
     const pg = pigeons[i];
     pg.x += pg.vx * dt;
     pg.wingTimer += dt;
-    if (pg.wingTimer > 14) { pg.wingFrame = (pg.wingFrame + 1) % 2; pg.wingTimer = 0; }
+    if (pg.wingTimer > 14) { pg.wingFrame = (pg.wingFrame + 1) % 4; pg.wingTimer = 0; }
     if (pg.x < -100 || pg.x > gameState.worldW + 100) { pigeons.splice(i, 1); continue; }
 
     if (!overlap(ph, pg)) continue;

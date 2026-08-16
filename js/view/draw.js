@@ -201,25 +201,42 @@ export function drawPigeon(pg) {
   const px = pg.x - gameState.cameraX;
   if (px + pg.w < -10 || px > CANVAS_W + 10) return;
 
-  // Sprite sheet hook — 2 columns (wing-up, wing-down) × 2 rows (normal, danger).
-  // Update frame dimensions once the actual sheet arrives.
   if (media.pigeonImage) {
-    const FW = 48, FH = 40;
-    const row = pg.isDanger ? 1 : 0;
-    const col = pg.wingFrame % 2;
+    const img = media.pigeonImage;
+    const IW  = img.naturalWidth  || img.width;
+    const IH  = img.naturalHeight || img.height;
+    // Proportional layout — 3 equal-height rows:
+    //   Row 0: 8 cols — walking pigeon (not used for flying)
+    //   Row 1: 4 cols — normal flying pigeon   [faces LEFT]
+    //   Row 2: 4 cols — danger flying pigeon    [faces LEFT]
+    const rowIndex = pg.isDanger ? 2 : 1;
+    const col      = pg.wingFrame % 4;
+    const RH = IH / 3;
+    const sx = col * IW / 4;
+    const sy = rowIndex * RH;
+    const sw = IW / 4;
+    const sh = RH;
+    // Render at 2× hitbox size, centered over hitbox
+    const renderW = pg.w * 2;
+    const renderH = pg.h * 2;
+    const rx = px  - (renderW - pg.w) / 2;
+    const ry = pg.y - (renderH - pg.h) / 2;
+    const goesRight = pg.vx > 0;
     ctx.save();
-    if (pg.vx > 0) {
-      ctx.translate(px + pg.w, pg.y);
+    if (goesRight) {
+      ctx.translate(rx + renderW, ry);
       ctx.scale(-1, 1);
-      ctx.drawImage(media.pigeonImage, col * FW, row * FH, FW, FH, 0, 0, pg.w, pg.h);
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, renderW, renderH);
     } else {
-      ctx.drawImage(media.pigeonImage, col * FW, row * FH, FW, FH, px, pg.y, pg.w, pg.h);
+      ctx.drawImage(img, sx, sy, sw, sh, rx, ry, renderW, renderH);
     }
     ctx.restore();
     return;
   }
   const wingUp    = pg.wingFrame === 0;
   const goingLeft = pg.vx < 0;
+  const w = pg.w;
+  const h = pg.h;
 
   // Danger pigeon: vivid red; regular: warm brown
   const d = pg.isDanger;
@@ -426,37 +443,6 @@ export function drawCaesar() {
   const cx = caesar.x - gameState.cameraX;
   if (cx + caesar.w < -10 || cx > CANVAS_W + 10) return;
 
-  // If a sprite sheet is provided, render it and skip canvas drawing.
-  // Expected sheet layout: 3 columns × 2 rows (each frame 64×64 px).
-  //   row 0: curled-sleep, walk-A, walk-B
-  //   row 1: sit, pet-happy, enhanced
-  // Update frame dimensions / indices here once the actual sheet arrives.
-  if (media.caesarImage) {
-    const FW = 64, FH = 64;
-    const renderW = 48, renderH = 48;
-    const celebBounce = gameState.celebrating && (caesar.met || caesar.roaming)
-      ? -Math.abs(Math.sin(Date.now() / 200)) * 12 : 0;
-    const ry = caesar.y + celebBounce;
-    let col = 0, row = 0;
-    if (caesar.curled)       { col = 0; row = 0; }
-    else if (caesar.sleeping){ col = 0; row = 1; }
-    else if (caesar.petTimer > 0 || (caesar.roaming && caesar.idleTimer > 130 && caesar.catchTimer <= 0))
-                             { col = 1; row = 1; }
-    else if (caesar.enhanced){ col = 2; row = 1; }
-    else                     { col = (caesar.walkFrame % 2) + 1; row = 0; }
-
-    ctx.save();
-    if (caesar.facing === -1) {
-      ctx.translate(cx + renderW / 2, 0);
-      ctx.scale(-1, 1);
-      ctx.drawImage(media.caesarImage, col * FW, row * FH, FW, FH, -renderW / 2, ry - (renderH - caesar.h), renderW, renderH);
-    } else {
-      ctx.drawImage(media.caesarImage, col * FW, row * FH, FW, FH, cx - (renderW - caesar.w) / 2, ry - (renderH - caesar.h), renderW, renderH);
-    }
-    ctx.restore();
-    return;
-  }
-
   const w = caesar.w, h = caesar.h;
   const flip = caesar.facing === -1;
   const celebBounce = gameState.celebrating && (caesar.met || caesar.roaming)
@@ -481,6 +467,49 @@ export function drawCaesar() {
     ctx.strokeStyle = '#ff9900'; ctx.lineWidth = 4;
     ctx.beginPath(); ctx.arc(cx + w / 2, baseY + h / 2, w * 1.1, 0, Math.PI * 2); ctx.stroke();
     ctx.globalAlpha = 1; ctx.restore();
+  }
+
+  if (media.caesarImage) {
+    const img = media.caesarImage;
+    const IW  = img.naturalWidth  || img.width;
+    const IH  = img.naturalHeight || img.height;
+    const RH  = IH / 4;
+    // Proportional layout — 4 equal-height rows:
+    //   Row 0: 4 cols – sit(0), standFront(1), walkA(2), walkB(3)     [all face RIGHT]
+    //   Row 1: 2 cols – runLeapL(0), trotL(1)                         [face LEFT — not used]
+    //   Row 2: 3 cols – jumpLeap(0), crouch(1), playing(2)            [all face RIGHT]
+    //   Row 3: 5 cols – loaf(0), lying(1), sleepCurl(2), sleepBack(3), happy(4)
+    let sx, sy, sw, sh;
+    if (caesar.curled) {
+      [sx, sy, sw, sh] = [IW * 2 / 5, RH * 3, IW / 5, RH];             // sleepCurl
+    } else if (caesar.sleeping) {
+      [sx, sy, sw, sh] = [IW * 3 / 5, RH * 3, IW / 5, RH];             // sleepBack
+    } else if (caesar.petTimer > 0) {
+      [sx, sy, sw, sh] = [IW * 4 / 5, RH * 3, IW / 5, RH];             // happy/hearts
+    } else if (!caesar.onGround) {
+      [sx, sy, sw, sh] = [0, RH * 2, IW / 3, RH];                       // jumpLeap
+    } else if (caesar.enhanced && caesar.catchTimer > 0) {
+      [sx, sy, sw, sh] = [IW / 3, RH * 2, IW / 3, RH];                 // crouch/hunting
+    } else if (caesar.idleTimer > 150 && Math.abs(caesar.vx) < 0.5) {
+      [sx, sy, sw, sh] = [0, 0, IW / 4, RH];                            // sit
+    } else {
+      const step = caesar.walkFrame;                                      // 0 or 1
+      [sx, sy, sw, sh] = [(2 + step) * IW / 4, 0, IW / 4, RH];         // walkA / walkB
+    }
+    const renderW = Math.round(w * 2.2);
+    const renderH = Math.round(h * 2.8);
+    const rx = cx - (renderW - w) / 2;
+    const ry = baseY - (renderH - h);
+    ctx.save();
+    if (flip) {
+      ctx.translate(rx + renderW, ry);
+      ctx.scale(-1, 1);
+      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, renderW, renderH);
+    } else {
+      ctx.drawImage(img, sx, sy, sw, sh, rx, ry, renderW, renderH);
+    }
+    ctx.restore();
+    return;
   }
 
   // ── CURLED pose (sleeping ball, before found in L2-3) ──
