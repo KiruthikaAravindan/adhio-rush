@@ -59,9 +59,26 @@ body.is-touch {
 }
 #ui > span > span { color: #FFD700; min-width: 18px; }
 
-/* Settings icon — right-aligned in the HUD strip, no border/background */
-#btn-settings {
+/* Settings + inventory icons — right-aligned in the HUD strip, no border/background */
+#btn-inventory {
   margin-left: auto;
+  pointer-events: all;
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.8);
+  font-size: 18px;
+  cursor: pointer;
+  width: 32px; height: 32px;
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0;
+  transition: color 0.12s;
+}
+#btn-inventory:hover  { color: #fff; }
+#btn-inventory:active { color: rgba(255,255,255,0.5); }
+
+#btn-settings {
+  margin-left: 4px;
   pointer-events: all;
   background: none;
   border: none;
@@ -77,6 +94,7 @@ body.is-touch {
 #btn-settings:hover  { color: #fff; }
 #btn-settings:active { color: rgba(255,255,255,0.5); }
 
+body.is-touch #btn-inventory,
 body.is-touch #btn-settings { width: 36px; height: 36px; font-size: 20px; }
 
 /* ══════════════════════════════════════════════════════════════════
@@ -283,8 +301,33 @@ body.is-touch #touch-controls {
 }
 #btn-action.hidden { display: none; }
 
+/* Secondary action button — shown below primary when level fails */
+#btn-action-secondary {
+  position: absolute;
+  bottom: 8px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  background: rgba(20, 10, 50, 0.88);
+  color: #aef;
+  border: 1px solid #554488;
+  border-radius: 10px;
+  padding: 8px 28px;
+  font-size: 13px;
+  font-family: 'Courier New', monospace;
+  font-weight: bold;
+  letter-spacing: 1px;
+  cursor: pointer;
+  pointer-events: all;
+  white-space: nowrap;
+  transition: background 0.1s;
+}
+#btn-action-secondary:active { background: rgba(60, 20, 120, 0.88); }
+#btn-action-secondary.hidden { display: none; }
+
 /* ── Settings panel (centered overlay) ── */
-#settings-panel {
+#settings-panel,
+#inventory-panel {
   position: absolute;
   top: 50%; left: 50%;
   transform: translate(-50%, -50%);
@@ -299,7 +342,8 @@ body.is-touch #touch-controls {
   font-family: 'Courier New', monospace;
   pointer-events: all;
 }
-#settings-panel.hidden { display: none; }
+#settings-panel.hidden,
+#inventory-panel.hidden { display: none; }
 
 /* Mobile-only actions inside the settings panel */
 .mobile-menu-actions {
@@ -324,7 +368,8 @@ body.is-touch .mobile-menu-actions { display: flex; }
 }
 .menu-action-btn:active { background: rgba(255,255,255,0.22); }
 
-#btn-settings-close {
+#btn-settings-close,
+#btn-inventory-close {
   margin-top: 14px;
   background: transparent;
   color: #888;
@@ -336,7 +381,8 @@ body.is-touch .mobile-menu-actions { display: flex; }
   cursor: pointer;
   transition: color 0.1s, border-color 0.1s;
 }
-#btn-settings-close:hover { color: #ccc; border-color: #665588; }
+#btn-settings-close:hover,
+#btn-inventory-close:hover { color: #ccc; border-color: #665588; }
 
 .settings-title {
   font-size: 15px;
@@ -406,3 +452,32 @@ body.is-touch .mobile-menu-actions { display: flex; }
   border-color: rgba(255,120,0,0.50);
 }
 .tbtn-treat:active, .tbtn-treat.pressed { background: rgba(255,120,0,0.45); }
+
+/* ── Treat cooldown progress ring (mobile) ── */
+.tbtn-treat { position: relative; }
+.treat-progress {
+  position: absolute;
+  inset: -4px;
+  width: calc(100% + 8px); height: calc(100% + 8px);
+  pointer-events: none;
+  transform: rotate(-90deg);
+  display: none;
+}
+.treat-ring {
+  fill: none;
+  stroke: #ff9900;
+  stroke-width: 3;
+  stroke-dasharray: 188.5;
+  stroke-dashoffset: 188.5;
+}
+#btn-treat.on-cooldown .treat-progress { display: block; }
+
+/* ── Inventory note ── */
+.inv-note {
+  font-size: 11px;
+  color: #888;
+  letter-spacing: 0.5px;
+  margin-top: -8px;
+  margin-bottom: 10px;
+  text-align: right;
+}

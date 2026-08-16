@@ -200,7 +200,24 @@ export function drawBoxItem(item) {
 export function drawPigeon(pg) {
   const px = pg.x - gameState.cameraX;
   if (px + pg.w < -10 || px > CANVAS_W + 10) return;
-  const w = pg.w, h = pg.h;
+
+  // Sprite sheet hook — 2 columns (wing-up, wing-down) × 2 rows (normal, danger).
+  // Update frame dimensions once the actual sheet arrives.
+  if (media.pigeonImage) {
+    const FW = 48, FH = 40;
+    const row = pg.isDanger ? 1 : 0;
+    const col = pg.wingFrame % 2;
+    ctx.save();
+    if (pg.vx > 0) {
+      ctx.translate(px + pg.w, pg.y);
+      ctx.scale(-1, 1);
+      ctx.drawImage(media.pigeonImage, col * FW, row * FH, FW, FH, 0, 0, pg.w, pg.h);
+    } else {
+      ctx.drawImage(media.pigeonImage, col * FW, row * FH, FW, FH, px, pg.y, pg.w, pg.h);
+    }
+    ctx.restore();
+    return;
+  }
   const wingUp    = pg.wingFrame === 0;
   const goingLeft = pg.vx < 0;
 
@@ -408,6 +425,37 @@ export function drawCaesar() {
   if (!caesar.active) return;
   const cx = caesar.x - gameState.cameraX;
   if (cx + caesar.w < -10 || cx > CANVAS_W + 10) return;
+
+  // If a sprite sheet is provided, render it and skip canvas drawing.
+  // Expected sheet layout: 3 columns × 2 rows (each frame 64×64 px).
+  //   row 0: curled-sleep, walk-A, walk-B
+  //   row 1: sit, pet-happy, enhanced
+  // Update frame dimensions / indices here once the actual sheet arrives.
+  if (media.caesarImage) {
+    const FW = 64, FH = 64;
+    const renderW = 48, renderH = 48;
+    const celebBounce = gameState.celebrating && (caesar.met || caesar.roaming)
+      ? -Math.abs(Math.sin(Date.now() / 200)) * 12 : 0;
+    const ry = caesar.y + celebBounce;
+    let col = 0, row = 0;
+    if (caesar.curled)       { col = 0; row = 0; }
+    else if (caesar.sleeping){ col = 0; row = 1; }
+    else if (caesar.petTimer > 0 || (caesar.roaming && caesar.idleTimer > 130 && caesar.catchTimer <= 0))
+                             { col = 1; row = 1; }
+    else if (caesar.enhanced){ col = 2; row = 1; }
+    else                     { col = (caesar.walkFrame % 2) + 1; row = 0; }
+
+    ctx.save();
+    if (caesar.facing === -1) {
+      ctx.translate(cx + renderW / 2, 0);
+      ctx.scale(-1, 1);
+      ctx.drawImage(media.caesarImage, col * FW, row * FH, FW, FH, -renderW / 2, ry - (renderH - caesar.h), renderW, renderH);
+    } else {
+      ctx.drawImage(media.caesarImage, col * FW, row * FH, FW, FH, cx - (renderW - caesar.w) / 2, ry - (renderH - caesar.h), renderW, renderH);
+    }
+    ctx.restore();
+    return;
+  }
 
   const w = caesar.w, h = caesar.h;
   const flip = caesar.facing === -1;

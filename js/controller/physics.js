@@ -124,6 +124,8 @@ export function resetGame() {
   gameState.coinCount    = 0;
   gameState.gameOver     = false;
   gameState.gameWon      = false;
+  gameState.levelFailed  = false;
+  gameState.showCaesarIntro = false;
   gameState.girlState        = 'idle';
   gameState.celebrating      = false;
   gameState.celebrationTimer = 0;
@@ -140,10 +142,12 @@ export function resetGame() {
   gameState.speedMult    = 1;
   gameState.powerupActive = null;
   gameState.powerupTimer  = 0;
-  gameState.treats        = 0;
-  gameState.caesarEverMet = false;
-  gameState.caesarNear    = false;
-  gameState.treatDropped  = false;
+  gameState.treats            = 0;
+  gameState.caesarEverMet     = false;
+  gameState.caesarNear        = false;
+  gameState.treatDropped      = false;
+  gameState.levelStartScore   = 0;
+  gameState.treatButtonCooldown = 0;
   clearQuiz();
   initLevel(1);
   applyCaesarForLevel(1);
@@ -153,6 +157,8 @@ export function resetGame() {
 export function nextLevel() {
   const next = Math.min(gameState.currentLevel + 1, 5);
   gameState.levelComplete    = false;
+  gameState.levelFailed      = false;
+  gameState.showCaesarIntro  = next === 4;
   gameState.girlState        = 'idle';
   gameState.celebrating      = false;
   gameState.celebrationTimer = 0;
@@ -169,14 +175,56 @@ export function nextLevel() {
   gameState.powerupTimer     = 0;
   gameState.caesarNear       = false;
   gameState.treatDropped     = false;
+  gameState.levelStartScore  = gameState.score; // bank for next level's retry cost
+  gameState.treatButtonCooldown = 0;
   clearQuiz();
   initLevel(next);
   applyCaesarForLevel(next);
   resetPlayer();
 }
 
+export function retryLevel() {
+  const n = gameState.currentLevel;
+
+  // Score handling: L1 is free (reset to 0); L2+ costs 2000 from level-start bank
+  if (n === 1) {
+    gameState.score           = 0;
+    gameState.levelStartScore = 0;
+    gameState.coinCount       = 0;
+  } else {
+    const newScore            = Math.max(0, gameState.levelStartScore - 2000);
+    gameState.score           = newScore;
+    gameState.levelStartScore = newScore; // updated bank for further retries
+  }
+
+  gameState.lives        = 3;
+  gameState.gameOver     = false;
+  gameState.gameWon      = false;
+  gameState.levelFailed  = false;
+  gameState.levelComplete    = false;
+  gameState.girlState        = 'idle';
+  gameState.celebrating      = false;
+  gameState.celebrationTimer = 0;
+  gameState.restartHeld  = false;
+  gameState.pigeonTimer  = 0;
+  gameState.pigeonTarget = LEVEL_PIGEON_BASE[n] || 360;
+  gameState.jumpDown     = true;
+  gameState.killScore    = 0;
+  gameState.killBarFlash = 0;
+  gameState.speedMult    = 1;
+  gameState.powerupActive   = null;
+  gameState.powerupTimer    = 0;
+  gameState.caesarNear      = false;
+  gameState.treatButtonCooldown = 0;
+  // treats/coinCount intentionally kept (except L1 above) — inventory persists
+  // treatDropped NOT reset — same box won't drop a second treat on retry
+  clearQuiz();
+  initLevel(n);
+  applyCaesarForLevel(n);
+  resetPlayer();
+}
+
 export function jumpToLevel(n) {
-  gameState.score            = 0;
   gameState.lives            = 3;
   gameState.coinCount        = 0;
   gameState.gameOver         = false;
@@ -200,6 +248,8 @@ export function jumpToLevel(n) {
   gameState.treats           = 0;
   gameState.caesarNear       = false;
   gameState.treatDropped     = false;
+  gameState.levelStartScore  = 0;
+  gameState.treatButtonCooldown = 0;
   clearQuiz();
   initLevel(n);
   applyCaesarForLevel(n);

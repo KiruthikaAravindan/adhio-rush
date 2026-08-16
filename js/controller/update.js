@@ -3,7 +3,7 @@ import { gameState, player, particles, burst, burstHearts, floatText, commitBest
 import { coins, enemies, prizeBoxes, pigeons, boxItems, platforms, QUIZ_QUESTIONS } from '../model/level.js';
 import { SFX } from '../audio.js';
 import { isJump, isLeft, isRight, isRestart, consumePet, consumeTreat } from './input.js';
-import { overlap, playerHit, resolveVsWorld, resetPlayer, resetGame, nextLevel } from './physics.js';
+import { overlap, playerHit, resolveVsWorld, resetPlayer, resetGame, nextLevel, retryLevel } from './physics.js';
 
 const SPEED = 5.5;
 const JUMP  = -11;
@@ -141,8 +141,10 @@ export function update(dt) {
   // ── Restart / level-advance ─────────────────────────────────────────────────
   if (isRestart()) {
     if (!gameState.restartHeld) {
-      if (gameState.levelComplete)              nextLevel();
-      else if (gameState.gameOver || gameState.gameWon) resetGame();
+      if (gameState.levelComplete)                          nextLevel();
+      else if (gameState.showCaesarIntro)                   { gameState.showCaesarIntro = false; }
+      else if (gameState.gameOver && gameState.levelFailed) retryLevel();
+      else if (gameState.gameWon)                           resetGame();
     }
     gameState.restartHeld = true;
   } else {
@@ -153,6 +155,8 @@ export function update(dt) {
     commitBestScore();
     return;
   }
+
+  if (gameState.showCaesarIntro) return;
 
   // ── Celebration ─────────────────────────────────────────────────────────────
   if (gameState.celebrating) {
@@ -237,7 +241,7 @@ export function update(dt) {
   if (player.y > 570) {
     gameState.lives--;
     SFX.hit();
-    if (gameState.lives <= 0) { gameState.gameOver = true; SFX.gameOver(); return; }
+    if (gameState.lives <= 0) { gameState.gameOver = true; gameState.levelFailed = true; SFX.gameOver(); return; }
     resetPlayer();
   }
 
@@ -286,7 +290,7 @@ export function update(dt) {
       const maxPigeons = [0, 0, 1, 2, 2, 3][gameState.currentLevel] || 1;
       if (pigeons.filter(p => !p.isDanger).length < maxPigeons) {
         const fromLeft = Math.random() < 0.5;
-        const baseVx   = [0, 0, 3.0, 3.5, 4.5, 5.5][gameState.currentLevel] || 3.0;
+        const baseVx   = [0, 0, 3.0, 3.2, 3.6, 4.0][gameState.currentLevel] || 3.0;
         pigeons.push({
           x: fromLeft ? gameState.cameraX - 60 : gameState.cameraX + CANVAS_W + 20,
           y: 200 + Math.floor(Math.random() * 50),
@@ -323,7 +327,7 @@ export function update(dt) {
       player.invincible = 100;
       gameState.lives--;
       SFX.hit();
-      if (gameState.lives <= 0) { gameState.gameOver = true; SFX.gameOver(); }
+      if (gameState.lives <= 0) { gameState.gameOver = true; gameState.levelFailed = true; SFX.gameOver(); }
     }
   }
 
@@ -357,7 +361,7 @@ export function update(dt) {
       player.invincible = 100;
       gameState.lives--;
       SFX.hit();
-      if (gameState.lives <= 0) { gameState.gameOver = true; SFX.gameOver(); }
+      if (gameState.lives <= 0) { gameState.gameOver = true; gameState.levelFailed = true; SFX.gameOver(); }
     }
   }
 
@@ -410,10 +414,12 @@ export function update(dt) {
       burst(caesar.x + caesar.w / 2, caesar.y, '#ff9900', 5);
     }
 
-    // Treat (L3+: enhanced mode — also catches flying pigeons + jumps)
-    if ((caesar.met || caesar.roaming) && gameState.currentLevel >= 3 &&
-        gameState.treats > 0 && caesar.catchTimer <= 0 && consumeTreat()) {
+    // Treat (L4+: enhanced mode — also catches flying pigeons + jumps)
+    if ((caesar.met || caesar.roaming) && gameState.currentLevel >= 4 &&
+        gameState.treats > 0 && caesar.catchTimer <= 0 &&
+        gameState.treatButtonCooldown <= 0 && consumeTreat()) {
       gameState.treats--;
+      gameState.treatButtonCooldown = 1200; // 20-second cooldown at 60fps
       caesar.catchTimer = 600;
       caesar.enhanced   = true;
       caesar.sleeping   = false;
@@ -446,14 +452,28 @@ export function update(dt) {
       } else {
         caesar.idleTimer = Math.max(caesar.idleTimer - dt * 2, 0);
       }
-      // Jump up to player's platform when enhanced
-      if (caesar.enhanced && caesar.onGround && player.y < caesar.y - 25) {
+      // Jump up to player's platform (always, not just in enhanced mode)
+      if (caesar.onGround && player.y < caesar.y - 25) {
         const pNear = platforms.find(p =>
           p.h <= 25 &&
           Math.abs(p.y - caesar.h - player.y) < 22 &&
           p.x < caesar.x + 90 && p.x + p.w > caesar.x - 50
         );
         if (pNear) { caesar.vy = -9; caesar.onGround = false; }
+      }
+      // Pit detection — jump over gaps regardless of enhanced state
+      if (caesar.onGround && Math.abs(caesar.vx) > 0.3) {
+        const dir = caesar.vx > 0 ? 1 : -1;
+        const checkX = dir > 0 ? caesar.x + caesar.w + 24 : caesar.x - 24;
+        const feetY = caesar.y + caesar.h;
+        const hasPlatformAhead = platforms.some(p =>
+          checkX >= p.x && checkX <= p.x + p.w &&
+          p.y >= feetY - 8 && p.y <= feetY + 30
+        );
+        if (!hasPlatformAhead && checkX > 0 && checkX < gameState.worldW) {
+          caesar.vy = -10;
+          caesar.onGround = false;
+        }
       }
       const targetX = player.x - 55;
       const dx = targetX - caesar.x;
@@ -470,6 +490,12 @@ export function update(dt) {
     // Active catch window
     if (caesar.catchTimer > 0) {
       caesar.catchTimer -= dt;
+    }
+    if (gameState.treatButtonCooldown > 0) {
+      gameState.treatButtonCooldown -= dt;
+      if (gameState.treatButtonCooldown < 0) gameState.treatButtonCooldown = 0;
+    }
+    if (caesar.catchTimer > 0) {
       const RANGE = 140;
 
       // Enhanced: jump toward nearby flying pigeons

@@ -5,19 +5,19 @@ import { settings, saveSettings } from './model/settings.js';
 import { gameState, caesar, media } from './model/state.js';
 import { platforms, coins, enemies, prizeBoxes, pigeons, boxItems } from './model/level.js';
 import './controller/input.js';
-import { resetGame, nextLevel, jumpToLevel } from './controller/physics.js';
+import { resetGame, nextLevel, jumpToLevel, retryLevel } from './controller/physics.js';
 import { update } from './controller/update.js';
 import {
   drawBg, drawPlatform, drawNote, drawEnemy, drawPigeon,
   drawPrizeBox, drawBoxItem, drawPlayer, drawGirl, drawParticles, drawCaesar,
 } from './view/draw.js';
-import { syncUI, drawOverlay, drawLevelComplete, drawQuiz, drawKillBar, drawPowerupHud, drawCaesarHud } from './view/hud.js';
+import { syncUI, drawOverlay, drawLevelComplete, drawQuiz, drawKillBar, drawPowerupHud, drawCaesarHud, drawCaesarIntro } from './view/hud.js';
 
 // ── Touch-device detection ─────────────────────────────────────────────────────
 const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches;
 if (IS_TOUCH) document.body.classList.add('is-touch');
 
-gameState.speedScale = IS_TOUCH ? 0.62 : 1;
+gameState.speedScale = IS_TOUCH ? 0.62 : 0.80;
 gameState.jumpScale  = IS_TOUCH ? 1.1 : 1;
 
 // ── Responsive scaling ─────────────────────────────────────────────────────────
@@ -93,10 +93,10 @@ if (!IS_TOUCH) {
 }
 
 // ── Settings button ────────────────────────────────────────────────────────────
-const btnSettings    = document.getElementById('btn-settings');
-const settingsPanel  = document.getElementById('settings-panel');
-const togMusic       = document.getElementById('tog-music');
-const togSfx         = document.getElementById('tog-sfx');
+const btnSettings   = document.getElementById('btn-settings');
+const settingsPanel = document.getElementById('settings-panel');
+const togMusic      = document.getElementById('tog-music');
+const togSfx        = document.getElementById('tog-sfx');
 
 function syncSettingsUI() {
   togMusic.textContent = settings.music ? 'ON' : 'OFF';
@@ -109,12 +109,16 @@ syncSettingsUI();
 btnSettings.addEventListener('click', () => {
   syncSettingsUI();
   settingsPanel.classList.toggle('hidden');
+  inventoryPanel.classList.add('hidden');
 });
 document.getElementById('btn-settings-close').addEventListener('click', () => {
   settingsPanel.classList.add('hidden');
 });
-// Close panel when clicking the canvas
-canvas.addEventListener('click', () => settingsPanel.classList.add('hidden'));
+// Close panels when clicking the canvas
+canvas.addEventListener('click', () => {
+  settingsPanel.classList.add('hidden');
+  inventoryPanel.classList.add('hidden');
+});
 
 togMusic.addEventListener('click', () => {
   settings.music = !settings.music;
@@ -129,7 +133,44 @@ togSfx.addEventListener('click', () => {
   syncSettingsUI();
 });
 
-// ── Dev level-jump buttons ────────────────────────────────────────────────────
+// ── Inventory button + treat shop ──────────────────────────────────────────────
+const inventoryPanel = document.getElementById('inventory-panel');
+const btnInventory   = document.getElementById('btn-inventory');
+
+function syncInventoryUI() {
+  const treatCount  = document.getElementById('treat-count');
+  const btnBuyTreat = document.getElementById('btn-buy-treat');
+  if (treatCount) treatCount.textContent = gameState.treats;
+  if (btnBuyTreat) {
+    const canBuy = gameState.currentLevel >= 4 && gameState.treats < 5 && gameState.score >= 5000;
+    btnBuyTreat.disabled = !canBuy;
+    btnBuyTreat.style.opacity = canBuy ? '1' : '0.45';
+  }
+}
+
+btnInventory.addEventListener('click', () => {
+  syncInventoryUI();
+  inventoryPanel.classList.toggle('hidden');
+  settingsPanel.classList.add('hidden');
+});
+document.getElementById('btn-inventory-close').addEventListener('click', () => {
+  inventoryPanel.classList.add('hidden');
+});
+
+const btnBuyTreat = document.getElementById('btn-buy-treat');
+if (btnBuyTreat) {
+  btnBuyTreat.addEventListener('click', () => {
+    if (gameState.currentLevel >= 4 && gameState.score >= 5000 && gameState.treats < 5) {
+      gameState.score -= 5000;
+      gameState.treats++;
+      syncUI();
+      syncInventoryUI();
+      syncCaesarBtns();
+    }
+  });
+}
+
+// ── Dev level-jump buttons ─────────────────────────────────────────────────────
 function syncLevelBtns() {
   [1, 2, 3, 4, 5].forEach(n => {
     const btn = document.getElementById(`btn-level-${n}`);
@@ -150,15 +191,11 @@ function syncLevelBtns() {
 });
 syncLevelBtns();
 
-// ── Caesar companion buttons + treat shop ─────────────────────────────────────
+// ── Caesar companion touch buttons ────────────────────────────────────────────
 function syncCaesarBtns() {
-  const btnPet      = document.getElementById('btn-pet');
-  const btnTreat    = document.getElementById('btn-treat');
-  const treatCount  = document.getElementById('treat-count');
-  const btnBuyTreat = document.getElementById('btn-buy-treat');
+  const btnPet   = document.getElementById('btn-pet');
+  const btnTreat = document.getElementById('btn-treat');
   const n = gameState.currentLevel;
-
-  if (treatCount) treatCount.textContent = gameState.treats;
 
   if (btnPet) {
     const visible = caesar.active && n >= 2 && n <= 3 && !caesar.met;
@@ -166,27 +203,25 @@ function syncCaesarBtns() {
     btnPet.classList.toggle('disabled', !gameState.caesarNear);
   }
   if (btnTreat) {
-    const visible = caesar.active && n >= 3 && (caesar.met || caesar.roaming);
+    const visible = caesar.active && n >= 4 && (caesar.met || caesar.roaming);
     btnTreat.classList.toggle('hidden',   !visible);
-    btnTreat.classList.toggle('disabled', gameState.treats <= 0 || caesar.catchTimer > 0);
-  }
-  if (btnBuyTreat) {
-    const canBuy = n >= 4 && gameState.treats < 5 && gameState.score >= 300;
-    btnBuyTreat.disabled = !canBuy;
-    btnBuyTreat.style.opacity = canBuy ? '1' : '0.45';
-  }
-}
+    btnTreat.classList.toggle('disabled', gameState.treats <= 0 || gameState.treatButtonCooldown > 0);
 
-const btnBuyTreat = document.getElementById('btn-buy-treat');
-if (btnBuyTreat) {
-  btnBuyTreat.addEventListener('click', () => {
-    if (gameState.currentLevel >= 4 && gameState.score >= 300 && gameState.treats < 5) {
-      gameState.score -= 300;
-      gameState.treats++;
-      syncUI();
-      syncCaesarBtns();
+    // SVG progress ring — fills as cooldown drains (shows when on cooldown)
+    const ring = btnTreat.querySelector('.treat-ring');
+    if (ring) {
+      const CIRC = 188.5; // 2π × 30
+      if (gameState.treatButtonCooldown > 0) {
+        btnTreat.classList.add('on-cooldown');
+        ring.style.strokeDashoffset = String(CIRC * (gameState.treatButtonCooldown / 1200));
+      } else {
+        btnTreat.classList.remove('on-cooldown');
+        ring.style.strokeDashoffset = String(CIRC);
+      }
     }
-  });
+  }
+
+  syncInventoryUI();
 }
 
 // ── Mobile-only panel actions ─────────────────────────────────────────────────
@@ -199,43 +234,96 @@ if (IS_TOUCH) {
   document.getElementById('btn-panel-restart').addEventListener('pointerdown', e => {
     e.preventDefault();
     settingsPanel.classList.add('hidden');
+    inventoryPanel.classList.add('hidden');
     resumeAudio();
     maybeStartBgMusic();
-    if (gameState.levelComplete) nextLevel();
-    else resetGame();
+    if (gameState.showCaesarIntro)                   { gameState.showCaesarIntro = false; }
+    else if (gameState.levelComplete)                nextLevel();
+    else if (gameState.gameOver && gameState.levelFailed) retryLevel();
+    else                                             resetGame();
     syncUI();
   });
 }
 
-// ── Action button (game-over / level-complete) ─────────────────────────────────
-const btnAction = document.getElementById('btn-action');
+// ── Action button (level-failed / level-complete / game-won / caesar-intro) ───
+const btnAction          = document.getElementById('btn-action');
+const btnActionSecondary = document.getElementById('btn-action-secondary');
 
 function syncActionBtn() {
-  if (gameState.levelComplete) {
+  if (gameState.showCaesarIntro) {
+    btnAction.textContent = '▶  START LEVEL 4';
+    btnAction.disabled    = false;
+    btnAction.style.opacity = '1';
+    btnAction.classList.remove('hidden');
+    if (btnActionSecondary) btnActionSecondary.classList.add('hidden');
+  } else if (gameState.levelComplete) {
     btnAction.textContent = 'NEXT LEVEL  ▶';
+    btnAction.disabled    = false;
+    btnAction.style.opacity = '1';
+    btnAction.classList.remove('hidden');
+    if (btnActionSecondary) btnActionSecondary.classList.add('hidden');
+  } else if (gameState.gameOver && gameState.levelFailed) {
+    if (gameState.currentLevel === 1) {
+      // Level 1 fail — free restart, no secondary button needed
+      btnAction.textContent   = 'RESTART  ▶';
+      btnAction.disabled      = false;
+      btnAction.style.opacity = '1';
+      if (btnActionSecondary) btnActionSecondary.classList.add('hidden');
+    } else if (gameState.levelStartScore >= 2000) {
+      btnAction.textContent   = 'RETRY LEVEL  ▶';
+      btnAction.disabled      = false;
+      btnAction.style.opacity = '1';
+      if (btnActionSecondary) btnActionSecondary.classList.remove('hidden');
+    } else {
+      btnAction.textContent   = 'RETRY LEVEL  ▶';
+      btnAction.disabled      = true;
+      btnAction.style.opacity = '0.40';
+      if (btnActionSecondary) btnActionSecondary.classList.remove('hidden');
+    }
     btnAction.classList.remove('hidden');
   } else if (gameState.gameOver || gameState.gameWon) {
-    btnAction.textContent = 'PLAY AGAIN  ▶';
+    btnAction.textContent   = 'PLAY AGAIN  ▶';
+    btnAction.disabled      = false;
+    btnAction.style.opacity = '1';
     btnAction.classList.remove('hidden');
+    if (btnActionSecondary) btnActionSecondary.classList.add('hidden');
   } else {
     btnAction.classList.add('hidden');
+    if (btnActionSecondary) btnActionSecondary.classList.add('hidden');
   }
 }
 
 btnAction.addEventListener('pointerdown', e => {
   e.preventDefault();
+  if (btnAction.disabled) return;
   resumeAudio();
   maybeStartBgMusic();
-  if (gameState.levelComplete) nextLevel();
+  if (gameState.showCaesarIntro)                   { gameState.showCaesarIntro = false; }
+  else if (gameState.levelComplete)                nextLevel();
+  else if (gameState.gameOver && gameState.levelFailed) {
+    if (gameState.currentLevel === 1 || gameState.levelStartScore >= 2000) retryLevel();
+  }
   else if (gameState.gameOver || gameState.gameWon) resetGame();
   btnAction.classList.add('hidden');
+  if (btnActionSecondary) btnActionSecondary.classList.add('hidden');
   syncUI();
 });
+
+if (btnActionSecondary) {
+  btnActionSecondary.addEventListener('pointerdown', e => {
+    e.preventDefault();
+    resumeAudio();
+    maybeStartBgMusic();
+    resetGame();
+    btnAction.classList.add('hidden');
+    btnActionSecondary.classList.add('hidden');
+    syncUI();
+  });
+}
 
 // ── Quiz: canvas click/tap to select answers ───────────────────────────────────
 canvas.addEventListener('pointerdown', e => {
   if (!gameState.quizActive) return;
-  // Don't propagate to the settings-panel close handler
   e.stopPropagation();
 
   const rect   = canvas.getBoundingClientRect();
@@ -245,13 +333,11 @@ canvas.addEventListener('pointerdown', e => {
   const cy = (e.clientY - rect.top)  * scaleY;
 
   if (gameState.quizAnswered) {
-    // Tap anywhere to dismiss the result early
     gameState.quizActive = false;
     gameState.quizData   = null;
     return;
   }
 
-  // Check which answer box was tapped/clicked
   const choices = gameState.quizData.choices;
   for (let i = 0; i < choices.length; i++) {
     const bx = 60 + i * 240, by = 180, bw = 220, bh = 52;
@@ -261,7 +347,7 @@ canvas.addEventListener('pointerdown', e => {
       gameState.quizAnswerCorrect = i === gameState.quizData.answer;
       if (gameState.quizAnswerCorrect) { gameState.score += 500; SFX.quizOk(); }
       else SFX.quizBad();
-      gameState.quizTimer = 90;  // fallback auto-dismiss after ~1.5 s
+      gameState.quizTimer = 90;
       break;
     }
   }
@@ -276,8 +362,8 @@ function loop() {
   _lastTime = now;
   update(dt);
 
-  const muteMusic = gameState.quizActive || gameState.gameOver ||
-                    gameState.gameWon    || gameState.levelComplete;
+  const muteMusic = gameState.quizActive || gameState.showCaesarIntro ||
+                    gameState.gameOver   || gameState.gameWon || gameState.levelComplete;
   setBgMusicMuted(muteMusic);
 
   ctx.clearRect(0, 0, CANVAS_W, CANVAS_H);
@@ -298,15 +384,26 @@ function loop() {
   syncUI();
   syncCaesarBtns();
   if (gameState.quizActive)                    drawQuiz();
+  if (gameState.showCaesarIntro)               drawCaesarIntro();
   if (gameState.levelComplete)                 drawLevelComplete();
   if (gameState.gameOver || gameState.gameWon) drawOverlay();
   syncActionBtn();
   requestAnimationFrame(loop);
 }
 
-// ── Sprite preload — start loop only after both images are ready ───────────────
+// ── Sprite preload — start loop only after player/girl are ready ───────────────
 const _boyImg  = new Image();
 const _girlImg = new Image();
+
+// Caesar and pigeon images load opportunistically — game falls back to
+// canvas drawing if the files don't exist yet.
+const _caesarImg = new Image();
+const _pigeonImg = new Image();
+_caesarImg.onload = () => { media.caesarImage = _caesarImg; };
+_caesarImg.src = 'resources/caesar.png';
+_pigeonImg.onload = () => { media.pigeonImage = _pigeonImg; };
+_pigeonImg.src = 'resources/pigeon.png';
+
 Promise.all([
   new Promise(res => { _boyImg.onload  = res; _boyImg.onerror  = res; _boyImg.src  = 'resources/boy.png'; }),
   new Promise(res => { _girlImg.onload = res; _girlImg.onerror = res; _girlImg.src = 'resources/girl.png'; }),

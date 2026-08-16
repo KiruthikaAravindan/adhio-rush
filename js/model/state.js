@@ -55,6 +55,12 @@ export const gameState = {
   caesarEverMet: false,
   caesarNear: false,
   treatDropped: false,
+
+  // level-save
+  levelFailed: false,
+  showCaesarIntro: false,
+  levelStartScore: 0,     // score at the start of current level (retry cost base)
+  treatButtonCooldown: 0, // frames remaining before treat button re-enables
 };
 
 // Persist the best score once a run ends. Idempotent — safe to call each frame.
@@ -77,7 +83,7 @@ export const player = {
 
 export const particles = [];
 
-export const media = { playerImage: null, girlImage: null };
+export const media = { playerImage: null, girlImage: null, caesarImage: null, pigeonImage: null };
 
 export const caesar = {
   active: false,

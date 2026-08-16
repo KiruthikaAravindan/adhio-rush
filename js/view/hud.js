@@ -60,7 +60,7 @@ export function drawCaesarHud() {
 
   // Mutually exclusive: pet requires !met, treat requires met/roaming
   const showPet   = gameState.caesarNear && !caesar.met && !caesar.roaming;
-  const showTreat = (caesar.met || caesar.roaming) && gameState.currentLevel >= 3;
+  const showTreat = (caesar.met || caesar.roaming) && gameState.currentLevel >= 4;
   if (!showPet && !showTreat) return;
 
   ctx.save();
@@ -79,13 +79,29 @@ export function drawCaesarHud() {
   }
 
   if (showTreat) {
-    const canUse    = gameState.treats > 0 && caesar.catchTimer <= 0;
+    const canUse    = gameState.treats > 0 && gameState.treatButtonCooldown <= 0;
+    const boxW      = gameState.treatButtonCooldown > 0 ? 210 : 176;
     ctx.globalAlpha = canUse ? 0.90 : 0.40;
     ctx.fillStyle   = 'rgba(0,0,0,0.62)';
-    ctx.fillRect(cx - 88, y - 12, 176, 24);
+    ctx.fillRect(cx - boxW / 2, y - 12, boxW, 24);
     ctx.fillStyle = canUse ? '#ff9900' : '#888';
     ctx.font      = 'bold 12px Courier New';
     ctx.fillText(`[F]  Treat 🐟 (${gameState.treats})`, cx, y);
+
+    // Cooldown arc — only visible while button is on cooldown
+    if (gameState.treatButtonCooldown > 0) {
+      const pct  = 1 - (gameState.treatButtonCooldown / 1200);
+      const arcX = cx + 94;
+      const arcR = 8;
+      ctx.globalAlpha = 0.55;
+      ctx.strokeStyle = '#444'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(arcX, y, arcR, 0, Math.PI * 2); ctx.stroke();
+      ctx.globalAlpha = 0.90;
+      ctx.strokeStyle = '#ff9900'; ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(arcX, y, arcR, -Math.PI / 2, -Math.PI / 2 + Math.PI * 2 * pct);
+      ctx.stroke();
+    }
   }
 
   ctx.globalAlpha = 1;
@@ -116,11 +132,37 @@ export function drawOverlay() {
   const cy = CANVAS_H / 2;
 
   if (gameState.gameOver) {
-    ctx.fillStyle = '#e63c00'; ctx.font = 'bold 66px Courier New';
-    ctx.fillText('GAME OVER', CANVAS_W / 2, cy - 52);
-    ctx.fillStyle = '#fff'; ctx.font = '28px Courier New';
-    ctx.fillText(`Score: ${gameState.score}`, CANVAS_W / 2, cy + 10);
-    drawBestLine(cy + 56);
+    if (gameState.levelFailed) {
+      ctx.fillStyle = '#e69000'; ctx.font = 'bold 60px Courier New';
+      ctx.fillText('LEVEL FAILED', CANVAS_W / 2, cy - 68);
+
+      if (gameState.currentLevel === 1) {
+        ctx.fillStyle = '#fff'; ctx.font = '22px Courier New';
+        ctx.fillText(`Score: ${gameState.score}`, CANVAS_W / 2, cy - 18);
+        ctx.fillStyle = '#aaa'; ctx.font = '14px Courier New';
+        ctx.fillText('Score resets when restarting Level 1', CANVAS_W / 2, cy + 8);
+        drawBestLine(cy + 52);
+      } else {
+        ctx.fillStyle = '#fff'; ctx.font = '18px Courier New';
+        ctx.fillText(`Score this run: ${gameState.score}`, CANVAS_W / 2, cy - 24);
+        ctx.fillStyle = '#aef'; ctx.font = '14px Courier New';
+        ctx.fillText(`Score from previous levels: ${gameState.levelStartScore} pts`, CANVAS_W / 2, cy + 0);
+        if (gameState.levelStartScore >= 2000) {
+          ctx.fillStyle = '#FFD700'; ctx.font = '14px Courier New';
+          ctx.fillText(`Retry costs 2000 pts  →  you will start with ${gameState.levelStartScore - 2000} pts`, CANVAS_W / 2, cy + 22);
+        } else {
+          ctx.fillStyle = '#ff5555'; ctx.font = 'bold 14px Courier New';
+          ctx.fillText(`Need 2000 pts to retry  (bank: ${gameState.levelStartScore} pts)`, CANVAS_W / 2, cy + 22);
+        }
+        drawBestLine(cy + 60);
+      }
+    } else {
+      ctx.fillStyle = '#e63c00'; ctx.font = 'bold 66px Courier New';
+      ctx.fillText('GAME OVER', CANVAS_W / 2, cy - 52);
+      ctx.fillStyle = '#fff'; ctx.font = '28px Courier New';
+      ctx.fillText(`Score: ${gameState.score}`, CANVAS_W / 2, cy + 10);
+      drawBestLine(cy + 56);
+    }
   } else if (gameState.gameWon) {
     ctx.fillStyle = '#FFD700'; ctx.font = 'bold 68px Courier New';
     ctx.fillText('YOU WIN!', CANVAS_W / 2, cy - 64);
@@ -184,4 +226,30 @@ export function drawQuiz() {
     ctx.fillStyle = '#888'; ctx.font = '14px Courier New';
     ctx.fillText('Tap anywhere to continue', CANVAS_W / 2, 305);
   }
+}
+
+export function drawCaesarIntro() {
+  ctx.fillStyle = 'rgba(0,0,20,0.93)';
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  ctx.textAlign = 'center';
+  const cx = CANVAS_W / 2;
+
+  ctx.fillStyle = '#FFD700'; ctx.font = 'bold 36px Courier New';
+  ctx.fillText('CAESAR IS YOUR COMPANION!', cx, 90);
+
+  ctx.fillStyle = '#e08830'; ctx.font = '56px Arial';
+  ctx.fillText('🐱', cx, 168);
+
+  ctx.fillStyle = '#ee66ff'; ctx.font = 'bold 18px Courier New';
+  ctx.fillText('You have befriended Caesar the cat!', cx, 222);
+
+  ctx.fillStyle = '#fff'; ctx.font = '16px Courier New';
+  ctx.fillText('He can hunt pigeons for you — feed him a treat', cx, 260);
+  ctx.fillText('and he will go into a pigeon-catching frenzy!', cx, 284);
+
+  ctx.fillStyle = '#FFD700'; ctx.font = 'bold 15px Courier New';
+  ctx.fillText('Treats can be bought from the Inventory (🎒 icon in the top bar)', cx, 328);
+
+  ctx.fillStyle = '#aef'; ctx.font = '14px Courier New';
+  ctx.fillText('Press  SPACE / R  or click  ▶ START LEVEL 4  to begin', cx, 372);
 }

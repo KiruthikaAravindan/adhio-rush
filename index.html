@@ -42,6 +42,7 @@
       <span>🏆 <span id="best">0</span></span>
       <span>❤️ <span id="lives">3</span></span>
       <span>♪ <span id="coins">0</span>/<span id="coins-total">0</span></span>
+      <button id="btn-inventory">🎒</button>
       <button id="btn-settings">⚙</button>
     </div>
 
@@ -54,12 +55,18 @@
       </div>
       <button class="tbtn tbtn-jump" id="btn-jump">▲</button>
       <button class="tbtn tbtn-pet hidden" id="btn-pet">🐾</button>
-      <button class="tbtn tbtn-treat hidden" id="btn-treat">🐟</button>
+      <button class="tbtn tbtn-treat hidden" id="btn-treat">
+        🐟
+        <svg class="treat-progress" viewBox="0 0 68 68" xmlns="http://www.w3.org/2000/svg">
+          <circle class="treat-ring" cx="34" cy="34" r="30"/>
+        </svg>
+      </button>
     </div>
 
     <button id="btn-action" class="hidden"></button>
+    <button id="btn-action-secondary" class="hidden">RESTART FROM L1  ▶</button>
 
-    <!-- Settings panel (⚙ on desktop · ☰ on mobile) -->
+    <!-- Settings panel (⚙) -->
     <div id="settings-panel" class="hidden">
       <div class="settings-title">⚙ SETTINGS</div>
       <div class="settings-row">
@@ -69,10 +76,6 @@
       <div class="settings-row">
         <span>Sound FX</span>
         <button id="tog-sfx" class="tog-btn">ON</button>
-      </div>
-      <div class="settings-row" id="treat-shop-row">
-        <span>🐟 Treats: <span id="treat-count">0</span></span>
-        <button id="btn-buy-treat" class="tog-btn">Buy (300pts)</button>
       </div>
       <!-- DEV: level jump — remove before shipping -->
       <div class="settings-row" id="dev-level-row">
@@ -91,6 +94,17 @@
         <button id="btn-panel-restart" class="menu-action-btn">↺ &nbsp;Restart</button>
       </div>
       <button id="btn-settings-close">✕ Close</button>
+    </div>
+
+    <!-- Inventory panel (🎒) -->
+    <div id="inventory-panel" class="hidden">
+      <div class="settings-title">🎒 INVENTORY</div>
+      <div class="settings-row">
+        <span>🐟 Treats: <span id="treat-count">0</span></span>
+        <button id="btn-buy-treat" class="tog-btn">Buy (5000 pts)</button>
+      </div>
+      <div class="inv-note">Available from Level 4</div>
+      <button id="btn-inventory-close">✕ Close</button>
     </div>
 
   </div>
