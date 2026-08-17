@@ -95,14 +95,10 @@ export function drawEnemy(e) {
 
   if (media.pigeonImage) {
     const img = media.pigeonImage;
-    const IW  = img.naturalWidth  || img.width;
-    const IH  = img.naturalHeight || img.height;
-    // Row 0: walking pigeon, 8 equal columns, sprites face RIGHT
-    const col = e.walkFrame % 8;
-    const sx = col * IW / 8;
-    const sy = 0;
-    const sw = IW / 8;
-    const sh = IH / 3;
+    const CW = (img.naturalWidth  || img.width)  / 7;
+    const RH = (img.naturalHeight || img.height) / 3;
+    // Row 0: walking pigeon, cols 0-3 (faces RIGHT — flip when going left)
+    const col = e.walkFrame % 4;
     const renderW = Math.round(w * 1.8);
     const renderH = Math.round(h * 1.8);
     const rx = ex - (renderW - w) / 2;
@@ -111,9 +107,9 @@ export function drawEnemy(e) {
     if (goingLeft) {
       ctx.translate(rx + renderW, ry);
       ctx.scale(-1, 1);
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, renderW, renderH);
+      ctx.drawImage(img, col * CW, 0, CW, RH, 0, 0, renderW, renderH);
     } else {
-      ctx.drawImage(img, sx, sy, sw, sh, rx, ry, renderW, renderH);
+      ctx.drawImage(img, col * CW, 0, CW, RH, rx, ry, renderW, renderH);
     }
     ctx.restore();
     return;
@@ -230,32 +226,24 @@ export function drawPigeon(pg) {
 
   if (media.pigeonImage) {
     const img = media.pigeonImage;
-    const IW  = img.naturalWidth  || img.width;
-    const IH  = img.naturalHeight || img.height;
-    // Proportional layout — 3 equal-height rows:
-    //   Row 0: 8 cols — walking pigeon (not used for flying)
-    //   Row 1: 4 cols — normal flying pigeon   [faces LEFT]
-    //   Row 2: 4 cols — danger flying pigeon    [faces LEFT]
+    const CW = (img.naturalWidth  || img.width)  / 7;
+    const RH = (img.naturalHeight || img.height) / 3;
+    // Grid: 7 cols × 3 rows. Rows 1-2 use only cols 0-3 (faces LEFT)
+    // Row 1: flying normal  Row 2: flying danger
     const rowIndex = pg.isDanger ? 2 : 1;
     const col      = pg.wingFrame % 4;
-    const RH = IH / 3;
-    const sx = col * IW / 4;
-    const sy = rowIndex * RH;
-    const sw = IW / 4;
-    const sh = RH;
-    // Render at 2× hitbox size, centered over hitbox
-    const renderW = pg.w * 2;
-    const renderH = pg.h * 2;
+    const renderW  = pg.w * 2;
+    const renderH  = pg.h * 2;
     const rx = px  - (renderW - pg.w) / 2;
     const ry = pg.y - (renderH - pg.h) / 2;
-    const goesLeft = pg.vx < 0;
+    const goesRight = pg.vx > 0;  // sprite faces LEFT — flip when going right
     ctx.save();
-    if (goesLeft) {
+    if (goesRight) {
       ctx.translate(rx + renderW, ry);
       ctx.scale(-1, 1);
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, renderW, renderH);
+      ctx.drawImage(img, col * CW, rowIndex * RH, CW, RH, 0, 0, renderW, renderH);
     } else {
-      ctx.drawImage(img, sx, sy, sw, sh, rx, ry, renderW, renderH);
+      ctx.drawImage(img, col * CW, rowIndex * RH, CW, RH, rx, ry, renderW, renderH);
     }
     ctx.restore();
     return;
@@ -498,27 +486,27 @@ export function drawCaesar() {
 
   if (media.caesarImage) {
     const img = media.caesarImage;
-    // Hardcoded regions for 2056×765 sprite (transparent bg, two informal rows)
-    // Row 1 (sy 0,   sh 360): sit | stand | walkA | walkB | leapA | leapB | crouch
-    // Row 2 (sy 360, sh 405): loaf | lyingRelaxed | sleepCurl | bellyUp | playing | happy
-    let sx, sy, sw, sh, renderW, renderH;
+    const CW = (img.naturalWidth  || img.width)  / 7;
+    const CH = (img.naturalHeight || img.height) / 2;
+    // Grid: 7 cols × 2 rows
+    // Row 0: sit(0) stand(1) walkA(2) walkB(3) leapA(4) leapB(5) crouch(6)
+    // Row 1: loaf(0) lying(1) sleepCurl(2) bellyUp(3) playing(4) happy(5) empty(6)
+    let col, row, renderW, renderH;
     if (caesar.curled) {
-      [sx, sy, sw, sh] = [579, 360, 283, 405]; [renderW, renderH] = [62, 36]; // sleepCurl
+      col=2; row=1; renderW=64; renderH=40;  // sleepCurl
     } else if (caesar.sleeping) {
-      [sx, sy, sw, sh] = [278, 360, 301, 405]; [renderW, renderH] = [68, 34]; // lyingRelaxed
+      col=1; row=1; renderW=70; renderH=38;  // lying
     } else if (caesar.petTimer > 0) {
-      [sx, sy, sw, sh] = [1473, 360, 239, 405]; [renderW, renderH] = [48, 58]; // happy/hearts
+      col=5; row=1; renderW=48; renderH=58;  // happy/hearts
     } else if (!caesar.onGround) {
-      [sx, sy, sw, sh] = [760, 0, 146, 360]; [renderW, renderH] = [58, 44];   // leapA
+      col=4; row=0; renderW=62; renderH=48;  // leapA
     } else if (caesar.enhanced && caesar.catchTimer > 0) {
-      [sx, sy, sw, sh] = [1037, 0, 199, 360]; [renderW, renderH] = [54, 46];  // crouch/hunt
-    } else if (caesar.idleTimer > 150 && Math.abs(caesar.vx) < 0.5) {
-      [sx, sy, sw, sh] = [0, 0, 172, 360]; [renderW, renderH] = [40, 58];     // sit
+      col=6; row=0; renderW=58; renderH=46;  // crouch/hunt
+    } else if (Math.abs(caesar.vx) < 0.5) {
+      col = caesar.idleTimer > 150 ? 0 : 1;
+      row=0; renderW=46; renderH=60;         // sit or stand
     } else {
-      [sx, sy, sw, sh] = caesar.walkFrame === 0
-        ? [373, 0, 194, 360]   // walkA
-        : [567, 0, 193, 360];  // walkB
-      [renderW, renderH] = [52, 50];
+      col=2+caesar.walkFrame; row=0; renderW=54; renderH=54; // walkA/walkB
     }
     const rx = cx - (renderW - w) / 2;
     const ry = baseY - (renderH - h);
@@ -526,9 +514,9 @@ export function drawCaesar() {
     if (flip) {
       ctx.translate(rx + renderW, ry);
       ctx.scale(-1, 1);
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, renderW, renderH);
+      ctx.drawImage(img, col * CW, row * CH, CW, CH, 0, 0, renderW, renderH);
     } else {
-      ctx.drawImage(img, sx, sy, sw, sh, rx, ry, renderW, renderH);
+      ctx.drawImage(img, col * CW, row * CH, CW, CH, rx, ry, renderW, renderH);
     }
     ctx.restore();
     return;

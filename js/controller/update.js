@@ -346,7 +346,7 @@ export function update(dt) {
     e.x += e.vx * dt;
     if (e.x <= e.left || e.x + e.w >= e.right) e.vx *= -1;
     e.walkTimer += dt;
-    if (e.walkTimer > 10) { e.walkFrame = (e.walkFrame + 1) % 8; e.walkTimer = 0; }
+    if (e.walkTimer > 10) { e.walkFrame = (e.walkFrame + 1) % 4; e.walkTimer = 0; }
 
     if (player.invincible > 0 || !overlap(ph, e)) continue;
     if (player.vy > 0 && player.y + player.h < e.y + e.h * 0.6) {
