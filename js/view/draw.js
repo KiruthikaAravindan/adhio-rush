@@ -102,7 +102,7 @@ export function drawEnemy(e) {
     const renderW = Math.round(w * 1.8);
     const renderH = Math.round(h * 1.8);
     const rx = ex - (renderW - w) / 2;
-    const ry = e.y - (renderH - h) / 2;
+    const ry = e.y - (renderH - h);
     ctx.save();
     if (goingLeft) {
       ctx.translate(rx + renderW, ry);
