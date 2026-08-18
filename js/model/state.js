@@ -101,6 +101,8 @@ export const caesar = {
   enhanced: false,   // treat mode — jumps for flying pigeons
   scrollSeen: false, // paw-print cue fired once on first scroll-in
   idleTimer: 0,      // player stillness counter → sit pose
+  sitPose: false,    // sticky sit flag (hysteresis prevents idle-flicker)
+  jumpCooldown: 0,   // frames until next platform-jump attempt allowed
   walkFrame: 0, walkTimer: 0,
 };
 

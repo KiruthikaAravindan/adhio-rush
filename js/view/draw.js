@@ -107,9 +107,9 @@ export function drawEnemy(e) {
     if (goingLeft) {
       ctx.translate(rx + renderW, ry);
       ctx.scale(-1, 1);
-      ctx.drawImage(img, col * CW, 0, CW, RH, 0, 0, renderW, renderH);
+      ctx.drawImage(img, col * CW + 1, 1, CW - 2, RH - 2, 0, 0, renderW, renderH);
     } else {
-      ctx.drawImage(img, col * CW, 0, CW, RH, rx, ry, renderW, renderH);
+      ctx.drawImage(img, col * CW + 1, 1, CW - 2, RH - 2, rx, ry, renderW, renderH);
     }
     ctx.restore();
     return;
@@ -236,14 +236,14 @@ export function drawPigeon(pg) {
     const renderH  = pg.h * 2;
     const rx = px  - (renderW - pg.w) / 2;
     const ry = pg.y - (renderH - pg.h) / 2;
-    const goesRight = pg.vx > 0;  // sprite faces LEFT — flip when going right
+    const goingLeft = pg.vx < 0;  // sprite faces RIGHT — flip when going left
     ctx.save();
-    if (goesRight) {
+    if (goingLeft) {
       ctx.translate(rx + renderW, ry);
       ctx.scale(-1, 1);
-      ctx.drawImage(img, col * CW, rowIndex * RH, CW, RH, 0, 0, renderW, renderH);
+      ctx.drawImage(img, col * CW + 1, rowIndex * RH + 1, CW - 2, RH - 2, 0, 0, renderW, renderH);
     } else {
-      ctx.drawImage(img, col * CW, rowIndex * RH, CW, RH, rx, ry, renderW, renderH);
+      ctx.drawImage(img, col * CW + 1, rowIndex * RH + 1, CW - 2, RH - 2, rx, ry, renderW, renderH);
     }
     ctx.restore();
     return;
@@ -503,7 +503,7 @@ export function drawCaesar() {
     } else if (caesar.enhanced && caesar.catchTimer > 0) {
       col=6; row=0; renderW=58; renderH=46;  // crouch/hunt
     } else if (Math.abs(caesar.vx) < 0.5) {
-      col = caesar.idleTimer > 150 ? 0 : 1;
+      col = caesar.sitPose ? 0 : 1;
       row=0; renderW=46; renderH=60;         // sit or stand
     } else {
       col=2+caesar.walkFrame; row=0; renderW=54; renderH=54; // walkA/walkB
@@ -514,9 +514,9 @@ export function drawCaesar() {
     if (flip) {
       ctx.translate(rx + renderW, ry);
       ctx.scale(-1, 1);
-      ctx.drawImage(img, col * CW, row * CH, CW, CH, 0, 0, renderW, renderH);
+      ctx.drawImage(img, col * CW + 1, row * CH + 1, CW - 2, CH - 2, 0, 0, renderW, renderH);
     } else {
-      ctx.drawImage(img, col * CW, row * CH, CW, CH, rx, ry, renderW, renderH);
+      ctx.drawImage(img, col * CW + 1, row * CH + 1, CW - 2, CH - 2, rx, ry, renderW, renderH);
     }
     ctx.restore();
     return;

@@ -452,14 +452,22 @@ export function update(dt) {
       } else {
         caesar.idleTimer = Math.max(caesar.idleTimer - dt * 2, 0);
       }
+      if (caesar.idleTimer >= 160 && !caesar.sitPose) caesar.sitPose = true;
+      if (caesar.idleTimer < 80  &&  caesar.sitPose)  caesar.sitPose = false;
       // Jump up to player's platform (always, not just in enhanced mode)
-      if (caesar.onGround && player.y < caesar.y - 25) {
+      if (caesar.jumpCooldown > 0) caesar.jumpCooldown -= dt;
+      if (caesar.onGround && player.y < caesar.y - 25 && caesar.jumpCooldown <= 0) {
         const pNear = platforms.find(p =>
           p.h <= 25 &&
           Math.abs(p.y - caesar.h - player.y) < 22 &&
           p.x < caesar.x + 90 && p.x + p.w > caesar.x - 50
         );
-        if (pNear) { caesar.vy = -9; caesar.onGround = false; }
+        if (pNear) {
+          caesar.vy = -9; caesar.onGround = false; caesar.jumpCooldown = 90;
+        } else {
+          // No reachable platform found — suppress re-attempts for a moment
+          caesar.jumpCooldown = 60;
+        }
       }
       // Pit detection — jump over gaps regardless of enhanced state
       if (caesar.onGround && Math.abs(caesar.vx) > 0.3) {
