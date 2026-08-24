@@ -290,6 +290,7 @@ export function initLevel(n) {
     x, y, w: 32, h: 32, alive: true,
     vx: -spd, origVx: -spd,
     left: l, right: r,
+    facing: -1,
     walkFrame: 0, walkTimer: 0,
   }));
   bd.forEach(([hi, type], idx) => prizeBoxes.push(mkBox(platforms, hi, qiPool[idx], type)));

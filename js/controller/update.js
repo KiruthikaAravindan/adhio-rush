@@ -311,8 +311,9 @@ export function update(dt) {
     if (pg.wingTimer > 14) { pg.wingFrame = (pg.wingFrame + 1) % 4; pg.wingTimer = 0; }
     if (pg.x < -100 || pg.x > gameState.worldW + 100) { pigeons.splice(i, 1); continue; }
 
-    if (!overlap(ph, pg)) continue;
-    if (player.vy > 0 && player.y + player.h < pg.y + pg.h * 0.6) {
+    const pgHit = { x: pg.x + pg.w * 0.2, y: pg.y + pg.h * 0.2, w: pg.w * 0.6, h: pg.h * 0.6 };
+    if (!overlap(ph, pgHit)) continue;
+    if (player.vy > 0 && player.y + player.h < pgHit.y + pgHit.h * 0.6) {
       // Stomped
       const killScore = pg.isDanger ? 1000 : 500;
       pigeons.splice(i, 1);
@@ -344,7 +345,11 @@ export function update(dt) {
     }
 
     e.x += e.vx * dt;
-    if (e.x <= e.left || e.x + e.w >= e.right) e.vx *= -1;
+    if (e.x <= e.left) {
+      e.x = e.left + 1; e.vx = Math.abs(e.vx); e.facing = 1;
+    } else if (e.x + e.w >= e.right) {
+      e.x = e.right - e.w - 1; e.vx = -Math.abs(e.vx); e.facing = -1;
+    }
     e.walkTimer += dt;
     if (e.walkTimer > 10) { e.walkFrame = (e.walkFrame + 1) % 4; e.walkTimer = 0; }
 

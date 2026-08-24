@@ -9,44 +9,47 @@ export function overlap(a, b) {
 // Tighter hitbox for interactive collisions (enemies, pigeons, coins).
 // Uses visible player bounds — excludes transparent sprite margins.
 export function playerHit() {
-  return { x: player.x + 5, y: player.y + 2, w: 22, h: 36 };
+  return { x: player.x + 8, y: player.y + 4, w: 16, h: 32 };
 }
 
 export function resolveVsWorld() {
   player.onGround = false;
+  // Narrow physics box: 8px inset each side so landing matches the visible character
+  const INS = 8;
+  const pb = { x: player.x + INS, y: player.y, w: player.w - INS * 2, h: player.h };
 
   for (const p of platforms) {
-    if (!overlap(player, p)) continue;
-    const ox = Math.min(player.x + player.w - p.x, p.x + p.w - player.x);
-    const oy = Math.min(player.y + player.h - p.y, p.y + p.h - player.y);
+    if (!overlap(pb, p)) continue;
+    const ox = Math.min(pb.x + pb.w - p.x, p.x + p.w - pb.x);
+    const oy = Math.min(pb.y + pb.h - p.y, p.y + p.h - pb.y);
     if (oy <= ox) {
-      if (player.y + player.h / 2 < p.y + p.h / 2) {
+      if (pb.y + pb.h / 2 < p.y + p.h / 2) {
         player.y = p.y - player.h; player.vy = 0; player.onGround = true;
       } else {
         player.y = p.y + p.h; player.vy = 0;
       }
     } else {
-      player.x = player.x + player.w / 2 < p.x + p.w / 2
-        ? p.x - player.w
-        : p.x + p.w;
+      player.x = pb.x + pb.w / 2 < p.x + p.w / 2
+        ? p.x - player.w + INS
+        : p.x + p.w - INS;
       player.vx = 0;
     }
   }
 
   for (const b of prizeBoxes) {
-    if (!overlap(player, b)) continue;
-    const ox = Math.min(player.x + player.w - b.x, b.x + b.w - player.x);
-    const oy = Math.min(player.y + player.h - b.y, b.y + b.h - player.y);
+    if (!overlap(pb, b)) continue;
+    const ox = Math.min(pb.x + pb.w - b.x, b.x + b.w - pb.x);
+    const oy = Math.min(pb.y + pb.h - b.y, b.y + b.h - pb.y);
     if (oy <= ox) {
-      if (player.y + player.h / 2 < b.y + b.h / 2) {
+      if (pb.y + pb.h / 2 < b.y + b.h / 2) {
         player.y = b.y - player.h; player.vy = 0; player.onGround = true;
       } else {
         player.y = b.y + b.h; player.vy = Math.max(0, player.vy);
       }
     } else {
-      player.x = player.x + player.w / 2 < b.x + b.w / 2
-        ? b.x - player.w
-        : b.x + b.w;
+      player.x = pb.x + pb.w / 2 < b.x + b.w / 2
+        ? b.x - player.w + INS
+        : b.x + b.w - INS;
       player.vx = 0;
     }
   }
