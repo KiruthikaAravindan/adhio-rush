@@ -311,10 +311,9 @@ export function update(dt) {
     if (pg.wingTimer > 14) { pg.wingFrame = (pg.wingFrame + 1) % 4; pg.wingTimer = 0; }
     if (pg.x < -100 || pg.x > gameState.worldW + 100) { pigeons.splice(i, 1); continue; }
 
-    const pgHit = { x: pg.x + pg.w * 0.2, y: pg.y + pg.h * 0.2, w: pg.w * 0.6, h: pg.h * 0.6 };
-    if (!overlap(ph, pgHit)) continue;
-    if (player.vy > 0 && player.y + player.h < pgHit.y + pgHit.h * 0.6) {
-      // Stomped
+    if (!overlap(ph, pg)) continue;
+    if (player.vy > 0 && player.y + player.h < pg.y + pg.h * 0.6) {
+      // Stomped — uses full pigeon rect so landing from above always registers
       const killScore = pg.isDanger ? 1000 : 500;
       pigeons.splice(i, 1);
       player.vy = -9;
@@ -325,6 +324,9 @@ export function update(dt) {
       burst(pg.x + pg.w / 2, pg.y + pg.h / 2, pg.isDanger ? '#ff5533' : '#aaaacc');
       floatText(pg.x + pg.w / 2, pg.y, '+500', '#FFD700');
     } else if (player.invincible <= 0) {
+      // Only hurt player when inside the tighter inner hitbox (avoids edge grazes)
+      const pgHit = { x: pg.x + pg.w * 0.2, y: pg.y + pg.h * 0.2, w: pg.w * 0.6, h: pg.h * 0.6 };
+      if (!overlap(ph, pgHit)) continue;
       player.invincible = 100;
       gameState.lives--;
       SFX.hit();
