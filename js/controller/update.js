@@ -311,7 +311,7 @@ export function update(dt) {
     if (pg.wingTimer > 14) { pg.wingFrame = (pg.wingFrame + 1) % 4; pg.wingTimer = 0; }
     if (pg.x < -100 || pg.x > gameState.worldW + 100) { pigeons.splice(i, 1); continue; }
 
-    if (!overlap(ph, pg)) continue;
+    if (!overlap(player, pg)) continue;
     if (player.vy > 0 && player.y + player.h < pg.y + pg.h * 0.6) {
       // Stomped — uses full pigeon rect so landing from above always registers
       const killScore = pg.isDanger ? 1000 : 500;
@@ -355,7 +355,7 @@ export function update(dt) {
     e.walkTimer += dt;
     if (e.walkTimer > 10) { e.walkFrame = (e.walkFrame + 1) % 4; e.walkTimer = 0; }
 
-    if (player.invincible > 0 || !overlap(ph, e)) continue;
+    if (!overlap(player, e)) continue;
     if (player.vy > 0 && player.y + player.h < e.y + e.h * 0.6) {
       e.alive = false;
       player.vy = -9;
@@ -364,7 +364,7 @@ export function update(dt) {
       checkKillScore(e.x + e.w / 2, e.y);
       SFX.stomp();
       burst(e.x + e.w / 2, e.y + e.h / 2, '#8B4513');
-    } else {
+    } else if (player.invincible <= 0 && overlap(ph, e)) {
       player.invincible = 100;
       gameState.lives--;
       SFX.hit();
