@@ -308,7 +308,8 @@ export function update(dt) {
     const pg = pigeons[i];
     pg.x += pg.vx * dt;
     pg.wingTimer += dt;
-    if (pg.wingTimer > 14) { pg.wingFrame = (pg.wingFrame + 1) % 4; pg.wingTimer = 0; }
+    const wingSpeed = 14;
+    if (pg.wingTimer > wingSpeed) { pg.wingFrame = (pg.wingFrame + 1) % 4; pg.wingTimer = 0; }
     if (pg.x < -100 || pg.x > gameState.worldW + 100) { pigeons.splice(i, 1); continue; }
 
     if (!overlap(player, pg)) continue;
@@ -378,14 +379,18 @@ export function update(dt) {
     for (let j = i + 1; j < enemies.length; j++) {
       if (!enemies[j].alive) continue;
       if (overlap(enemies[i], enemies[j])) {
-        enemies[i].vx *= -1;
-        enemies[j].vx *= -1;
+        enemies[i].vx *= -1; enemies[i].facing = enemies[i].vx > 0 ? 1 : -1;
+        enemies[j].vx *= -1; enemies[j].facing = enemies[j].vx > 0 ? 1 : -1;
       }
     }
   }
 
   // ── Caesar the cat ──────────────────────────────────────────────────────────
   if (caesar.active) {
+    if (caesar.debugPoseIndex !== undefined) {
+      delete caesar.debugPoseIndex;
+      delete caesar.debugPoseTimer;
+    } else {
 
     // Paw-print cue when Caesar first scrolls into view (L2-3, before found)
     if (!caesar.scrollSeen && caesar.curled) {
@@ -410,6 +415,7 @@ export function update(dt) {
     if (gameState.caesarNear && consumePet()) {
       caesar.curled     = false;
       caesar.met        = true;
+      caesar.roaming    = true;
       caesar.catchTimer = 600;
       caesar.enhanced   = false;
       caesar.sleeping   = false;
@@ -570,6 +576,7 @@ export function update(dt) {
     } else {
       caesar.walkFrame = 0;
     }
+    } // end non-debug
   }
 
   // ── Player animation ─────────────────────────────────────────────────────────

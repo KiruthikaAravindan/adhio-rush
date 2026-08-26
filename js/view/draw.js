@@ -69,7 +69,6 @@ export function drawPlatform(p) {
       if ((Math.floor(k / kw) % 7) !== 2 && (Math.floor(k / kw) % 7) !== 6)
         ctx.fillRect(bx, p.y, bkw, bkh);
     }
-    ctx.strokeStyle = '#999'; ctx.lineWidth = 1; ctx.strokeRect(px, p.y, p.w, p.h);
   }
 }
 
@@ -93,82 +92,109 @@ export function drawEnemy(e) {
   const w = e.w, h = e.h;
   const goingLeft = e.facing === -1;
 
-  if (media.pigeonImage) {
-    const img = media.pigeonImage;
-    const CW = (img.naturalWidth  || img.width)  / 7;
-    const RH = (img.naturalHeight || img.height) / 3;
-    // Row 0: walking pigeon, cols 0-3 (faces RIGHT — flip when going left)
-    const col = e.walkFrame % 4;
-    const renderW = Math.round(w * 1.8);
-    const renderH = Math.round(h * 1.8);
-    const rx = ex - (renderW - w) / 2;
-    const ry = e.y - (renderH - h);
-    const sx = Math.floor(col * CW) + 2, sy = 2, sw = Math.floor(CW) - 4, sh = Math.floor(RH) - 4;
-    ctx.save();
-    ctx.imageSmoothingEnabled = false;
-    if (goingLeft) {
-      ctx.translate(rx + renderW, ry);
-      ctx.scale(-1, 1);
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, renderW, renderH);
-    } else {
-      ctx.drawImage(img, sx, sy, sw, sh, rx, ry, renderW, renderH);
-    }
-    ctx.restore();
-    return;
-  }
-
-  const legSwing = e.walkFrame % 2 === 0 ? 3 : -3;
+  const legSwing = e.walkFrame % 2 === 0 ? 1.5 : -1.5;
+  const rw = Math.round(w * 1.3);
+  const rh = Math.round(h * 1.6);
+  const rx = ex - (rw - w) / 2;
+  const ry = e.y - (rh - h);
 
   ctx.save();
-  ctx.translate(ex + (goingLeft ? w : 0), e.y);
+  ctx.translate(rx + (goingLeft ? rw : 0), ry);
   if (goingLeft) ctx.scale(-1, 1);
 
   // Tail
-  ctx.fillStyle = '#9090a8';
+  ctx.fillStyle = '#9098a8';
   ctx.beginPath();
-  ctx.moveTo(w * 0.14, h * 0.42);
-  ctx.lineTo(w * -0.10, h * 0.56);
-  ctx.lineTo(w * 0.14, h * 0.68);
+  ctx.moveTo(rw*0.14, rh*0.72);
+  ctx.bezierCurveTo(rw*-0.04, rh*0.68, rw*-0.08, rh*0.84, rw*0.08, rh*0.90);
+  ctx.bezierCurveTo(rw*0.18, rh*0.86, rw*0.20, rh*0.76, rw*0.16, rh*0.73);
   ctx.closePath(); ctx.fill();
 
-  // Body
-  ctx.fillStyle = '#b8b8cc';
+  // Body — teardrop: round chest, sharp tail tip
+  ctx.fillStyle = '#c8ccd4';
   ctx.beginPath();
-  ctx.ellipse(w * 0.44, h * 0.52, w * 0.33, h * 0.25, 0.1, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Folded wing
-  ctx.fillStyle = '#8a8aaa';
-  ctx.beginPath();
-  ctx.ellipse(w * 0.44, h * 0.46, w * 0.28, h * 0.12, 0, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Iridescent neck patch
-  ctx.fillStyle = '#8899cc';
-  ctx.beginPath();
-  ctx.ellipse(w * 0.66, h * 0.44, w * 0.11, h * 0.15, -0.2, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Head
-  ctx.fillStyle = '#c0c0d0';
-  ctx.beginPath(); ctx.arc(w * 0.78, h * 0.28, w * 0.15, 0, Math.PI * 2); ctx.fill();
-
-  // Eye
-  ctx.fillStyle = '#ff7700';
-  ctx.beginPath(); ctx.arc(w * 0.86, h * 0.23, 2.5, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = '#000';
-  ctx.beginPath(); ctx.arc(w * 0.86, h * 0.23, 1.4, 0, Math.PI * 2); ctx.fill();
-
-  // Beak
-  ctx.fillStyle = '#cc8800';
-  ctx.beginPath();
-  ctx.moveTo(w * 0.92, h * 0.25); ctx.lineTo(w * 1.08, h * 0.29); ctx.lineTo(w * 0.92, h * 0.33);
+  ctx.moveTo(rw*0.14, rh*0.72);
+  ctx.bezierCurveTo(rw*0.14, rh*0.58, rw*0.38, rh*0.54, rw*0.60, rh*0.56);
+  ctx.bezierCurveTo(rw*0.76, rh*0.58, rw*0.82, rh*0.66, rw*0.80, rh*0.76);
+  ctx.bezierCurveTo(rw*0.78, rh*0.84, rw*0.56, rh*0.90, rw*0.36, rh*0.88);
+  ctx.bezierCurveTo(rw*0.24, rh*0.86, rw*0.14, rh*0.80, rw*0.14, rh*0.72);
   ctx.closePath(); ctx.fill();
 
-  // Walking legs
-  ctx.strokeStyle = '#cc8800'; ctx.lineWidth = 1.5;
-  ctx.beginPath(); ctx.moveTo(w * 0.38, h * 0.76); ctx.lineTo(w * 0.30 + legSwing, h * 1.0); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(w * 0.52, h * 0.76); ctx.lineTo(w * 0.60 - legSwing, h * 1.0); ctx.stroke();
+  // Wing — covers body, follows teardrop
+  ctx.fillStyle = '#adb5c0';
+  ctx.beginPath();
+  ctx.moveTo(rw*0.56, rh*0.58);
+  ctx.bezierCurveTo(rw*0.40, rh*0.54, rw*0.22, rh*0.58, rw*0.16, rh*0.68);
+  ctx.lineTo(rw*0.14, rh*0.72);
+  ctx.bezierCurveTo(rw*0.16, rh*0.78, rw*0.26, rh*0.86, rw*0.36, rh*0.88);
+  ctx.bezierCurveTo(rw*0.48, rh*0.90, rw*0.60, rh*0.88, rw*0.68, rh*0.82);
+  ctx.bezierCurveTo(rw*0.74, rh*0.76, rw*0.74, rh*0.66, rw*0.68, rh*0.60);
+  ctx.bezierCurveTo(rw*0.64, rh*0.58, rw*0.60, rh*0.58, rw*0.56, rh*0.58);
+  ctx.closePath(); ctx.fill();
+
+  // Belly lighter patch
+  ctx.fillStyle = '#d8dce4';
+  ctx.beginPath();
+  ctx.ellipse(rw*0.50, rh*0.75, rw*0.14, rh*0.09, 0.1, 0, Math.PI*2);
+  ctx.fill();
+
+  // Wing wavy stripes
+  ctx.strokeStyle = '#7c8898'; ctx.lineWidth = 2.0;
+  ctx.beginPath();
+  ctx.moveTo(rw*0.16, rh*0.65);
+  ctx.quadraticCurveTo(rw*0.24, rh*0.61, rw*0.32, rh*0.65);
+  ctx.quadraticCurveTo(rw*0.40, rh*0.69, rw*0.48, rh*0.65);
+  ctx.quadraticCurveTo(rw*0.56, rh*0.61, rw*0.62, rh*0.65);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(rw*0.16, rh*0.74);
+  ctx.quadraticCurveTo(rw*0.24, rh*0.70, rw*0.32, rh*0.74);
+  ctx.quadraticCurveTo(rw*0.40, rh*0.78, rw*0.48, rh*0.74);
+  ctx.quadraticCurveTo(rw*0.56, rh*0.70, rw*0.62, rh*0.74);
+  ctx.stroke();
+
+  // Head + neck — one connected dark shape
+  ctx.fillStyle = '#5a6270';
+  ctx.beginPath();
+  ctx.moveTo(rw*0.50, rh*0.52);
+  ctx.bezierCurveTo(rw*0.48, rh*0.38, rw*0.56, rh*0.24, rw*0.64, rh*0.22);
+  ctx.bezierCurveTo(rw*0.74, rh*0.20, rw*0.82, rh*0.30, rw*0.79, rh*0.44);
+  ctx.bezierCurveTo(rw*0.76, rh*0.56, rw*0.68, rh*0.60, rw*0.61, rh*0.60);
+  ctx.bezierCurveTo(rw*0.56, rh*0.60, rw*0.53, rh*0.58, rw*0.52, rh*0.55);
+  ctx.closePath(); ctx.fill();
+
+  // Neck feather marks
+  ctx.strokeStyle = '#484e5c'; ctx.lineWidth = 0.9;
+  ctx.beginPath(); ctx.arc(rw*0.55, rh*0.54, rw*0.026, Math.PI*0.9, Math.PI*2.1, false); ctx.stroke();
+  ctx.beginPath(); ctx.arc(rw*0.60, rh*0.56, rw*0.026, Math.PI*0.9, Math.PI*2.1, false); ctx.stroke();
+  ctx.beginPath(); ctx.arc(rw*0.65, rh*0.56, rw*0.026, Math.PI*0.9, Math.PI*2.1, false); ctx.stroke();
+
+  // Beak — yellow
+  ctx.fillStyle = '#d8a030';
+  ctx.beginPath();
+  ctx.moveTo(rw*0.77, rh*0.36); ctx.lineTo(rw*0.88, rh*0.39); ctx.lineTo(rw*0.77, rh*0.44);
+  ctx.closePath(); ctx.fill();
+
+  // Eye — white ring + dark pupil + highlight
+  ctx.fillStyle = '#ffffff';
+  ctx.beginPath(); ctx.arc(rw*0.71, rh*0.33, 2.8, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#1a1a22';
+  ctx.beginPath(); ctx.arc(rw*0.71, rh*0.33, 1.8, 0, Math.PI*2); ctx.fill();
+  ctx.fillStyle = '#fff';
+  ctx.beginPath(); ctx.arc(rw*0.722, rh*0.314, 0.6, 0, Math.PI*2); ctx.fill();
+
+  // Legs — dark grey, short
+  ctx.strokeStyle = '#484858'; ctx.lineWidth = 2;
+  const l1x = rw*0.38, l2x = rw*0.54;
+  const f1x = l1x + legSwing, f2x = l2x - legSwing;
+  ctx.beginPath(); ctx.moveTo(l1x, rh*0.90); ctx.lineTo(f1x, rh*0.97); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(l2x, rh*0.90); ctx.lineTo(f2x, rh*0.97); ctx.stroke();
+  ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(f1x - rw*0.12, rh*0.97); ctx.lineTo(f1x + rw*0.09, rh*0.97); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(f2x - rw*0.09, rh*0.97); ctx.lineTo(f2x + rw*0.12, rh*0.97); ctx.stroke();
+  ctx.lineWidth = 1.3;
+  ctx.beginPath(); ctx.moveTo(f1x - rw*0.04, rh*0.97); ctx.lineTo(f1x - rw*0.04, rh*1.01); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(f2x + rw*0.04, rh*0.97); ctx.lineTo(f2x + rw*0.04, rh*1.01); ctx.stroke();
 
   ctx.restore();
 }
@@ -235,21 +261,51 @@ export function drawPigeon(pg) {
     const rowIndex = pg.isDanger ? 2 : 1;
     const col      = pg.wingFrame % 4;
     const renderW  = pg.w * 2;
-    const renderH  = pg.h * 2;
+    const baseSH   = Math.floor(RH) - 4;
+    const baseRH   = pg.h * 2;
+    // Danger f1/f2: wing bleeds 43–60 source px above the sprite cell — expand render box upward
+    const dangerTopPadSrc = pg.isDanger ? [0, 55, 70, 0][col] : 0;
+    const topPadScreen    = Math.round(dangerTopPadSrc * baseRH / baseSH);
+    const renderH  = baseRH + topPadScreen;
     const rx = px  - (renderW - pg.w) / 2;
-    const ry = pg.y - (renderH - pg.h) / 2;
+    const ry = pg.y - (baseRH - pg.h) / 2 - topPadScreen;
     const goingLeft = pg.vx < 0;  // sprite faces RIGHT — flip when going left
-    const sx = Math.floor(col * CW) + 2, sy = Math.floor(rowIndex * RH) + 2;
-    const sw = Math.floor(CW) - 4,       sh = Math.floor(RH) - 4;
+    const sx = Math.floor(col * CW) + 2;
+    const headExtra    = (!pg.isDanger && col === 0) ? 2 : 0;
+    const dangerHeadEx = ( pg.isDanger && col === 0) ? 10 : 0;
+    // Normal: sy = rowIndex*RH+2, sh = baseSH (trim 2px each side)
+    // Danger: sy = rowIndex*RH - topPadSrc (no top trim + go above cell), sh = baseSH+2+topPadSrc
+    const sy = pg.isDanger
+      ? Math.floor(rowIndex * RH) - dangerTopPadSrc
+      : Math.floor(rowIndex * RH) + 2;
+    const sh = pg.isDanger ? baseSH + 2 + dangerTopPadSrc : baseSH;
+    const sw = Math.floor(CW) - 4 + headExtra + dangerHeadEx;
     ctx.save();
-    ctx.imageSmoothingEnabled = false;
     if (goingLeft) {
       ctx.translate(rx + renderW, ry);
       ctx.scale(-1, 1);
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, renderW, renderH);
     } else {
-      ctx.drawImage(img, sx, sy, sw, sh, rx, ry, renderW, renderH);
+      ctx.translate(rx, ry);
     }
+    // Clip in local (image) space — consistent regardless of flip direction
+    const normalClips = [
+      [6, 4, renderW - 5, renderH - 12],  // f0: +2 tail cut
+      [4, 4, renderW - 3, renderH - 12],  // f1: default
+      [4, 4, renderW - 3, renderH - 12],  // f2: default
+      [4, 4, renderW - 6.5, renderH - 12],  // f3: +3.5 head cut
+    ];
+    const dangerClips = [
+      [5, 0, renderW - 5, renderH - 19],      // f0: left 5, bottom 19
+      [4, 4, renderW - 4, renderH - 22.5],    // f1: left 4, top 4, bottom 18.5
+      [2.5, 6.5, renderW - 2.5, renderH - 24], // f2: left 2.5, top 6.5, bottom 17.5
+      [2, 0, renderW - 3.5, renderH - 18],    // f3: left 2, right -0.5 expand, bottom 18
+    ];
+    const frameClips = pg.isDanger ? dangerClips : normalClips;
+    const [cx, cy, cw, ch] = frameClips[col] || frameClips[0];
+    ctx.beginPath();
+    ctx.rect(cx, cy, cw, ch);
+    ctx.clip();
+    ctx.drawImage(img, sx, sy, sw, sh, 0, 0, renderW, renderH);
     ctx.restore();
     return;
   }
@@ -350,8 +406,8 @@ export function drawPlayer() {
   const dw = isAirborne ? 108 : DW;
   const dh = isAirborne ? 72  : DH;
   const bounceY = gameState.celebrating ? -Math.abs(Math.sin(Date.now() / 200)) * 18 : 0;
-  // +8 aligns sprite feet with hitbox bottom; +6 corrects jump-frame's left bias in sheet
-  const px = player.x - gameState.cameraX + (player.w - dw) / 2 + (isAirborne ? 6 : 0);
+  // +8 aligns sprite feet with hitbox bottom; +12 corrects jump-frame's left bias in sheet
+  const px = player.x - gameState.cameraX + (player.w - dw) / 2 + (isAirborne ? 12 : 0);
   const py = player.y + player.h - dh + bounceY + 8;
 
   if (media.playerImage) {
@@ -496,36 +552,59 @@ export function drawCaesar() {
     // Grid: 7 cols × 2 rows
     // Row 0: sit(0) stand(1) walkA(2) walkB(3) leapA(4) leapB(5) crouch(6)
     // Row 1: loaf(0) lying(1) sleepCurl(2) bellyUp(3) playing(4) happy(5) empty(6)
-    let col, row, renderW, renderH, dy;
+    let col, row;
     if (caesar.curled) {
-      col=2; row=1; renderW=64; renderH=40; dy=2;  // sleepCurl
+      col=2; row=1;
     } else if (caesar.sleeping) {
-      col=1; row=1; renderW=70; renderH=38; dy=2;  // lying
+      col=1; row=1;
     } else if (caesar.petTimer > 0) {
-      col=5; row=1; renderW=48; renderH=58; dy=6;  // happy/hearts
+      col=5; row=1;
     } else if (!caesar.onGround) {
-      col=4; row=0; renderW=62; renderH=48; dy=0;  // leapA — airborne
+      col=4; row=0;
     } else if (caesar.enhanced && caesar.catchTimer > 0) {
-      col=6; row=0; renderW=58; renderH=46; dy=4;  // crouch/hunt
+      col=6; row=0;
     } else if (Math.abs(caesar.vx) < 0.5) {
-      col = caesar.sitPose ? 0 : 1;
-      row=0; renderW=46; renderH=60; dy=6;         // sit or stand
+      col = caesar.sitPose ? 0 : 1; row=0;
     } else {
-      col=2+caesar.walkFrame; row=0; renderW=54; renderH=54; dy=6; // walkA/walkB
+      col=2+caesar.walkFrame; row=0;
     }
+    // Per-pose clip config (lc/tc/rc/bc in debug render space: rW=64, rH=natural)
+    const POSE_CLIPS = {
+      '0,0': {lc:4,   tc:44, rc:0, bc:8,  topPad:0},
+      '1,0': {lc:4,   tc:46, rc:0, bc:8,  topPad:0},
+      '2,0': {lc:1,   tc:46, rc:0, bc:8,  topPad:0},
+      '3,0': {lc:0,   tc:48, rc:0, bc:8,  topPad:0},
+      '4,0': {lc:0,   tc:48, rc:0, bc:8,  topPad:0},
+      '6,0': {lc:0,   tc:48, rc:4, bc:8,  topPad:0},
+      '2,1': {lc:1,   tc:0,  rc:0, bc:60, topPad:0},
+      '1,1': {lc:2.5, tc:0,  rc:0, bc:60, topPad:0},
+      '5,1': {lc:0,   tc:-2, rc:4, bc:60, topPad:8},
+    };
+    const pc = POSE_CLIPS[`${col},${row}`] || {lc:0, tc:0, rc:0, bc:0, topPad:0};
+    const sw = Math.floor(CW) - 10, sh = Math.floor(CH) - 10;
+    const renderW = 52;
+    const baseRH = Math.round(renderW * sh / sw);
+    const tps = Math.round(pc.topPad * baseRH / sh);
+    const renderH = baseRH + tps;
+    const dy = pc.bc * renderW / 64;
     const rx = cx - (renderW - w) / 2;
     const ry = baseY - (renderH - h) + dy;
-    const sx = Math.floor(col * CW) + 4, sy = Math.floor(row * CH) + 4;
-    const sw = Math.floor(CW) - 8,       sh = Math.floor(CH) - 8;
+    const sx = Math.floor(col * CW) + 5;
+    const adjSy = Math.floor(row * CH) + 5 - pc.topPad;
+    const adjSh = sh + pc.topPad;
+    const cs = renderW / 64;  // clip scale factor
+    const clipTop = (pc.tc - tps) * cs;
     ctx.save();
-    ctx.imageSmoothingEnabled = false;
     if (flip) {
       ctx.translate(rx + renderW, ry);
       ctx.scale(-1, 1);
-      ctx.drawImage(img, sx, sy, sw, sh, 0, 0, renderW, renderH);
     } else {
-      ctx.drawImage(img, sx, sy, sw, sh, rx, ry, renderW, renderH);
+      ctx.translate(rx, ry);
     }
+    ctx.beginPath();
+    ctx.rect(pc.lc * cs, clipTop, renderW - (pc.lc + pc.rc) * cs, renderH - clipTop - pc.bc * cs);
+    ctx.clip();
+    ctx.drawImage(img, sx, adjSy, sw, adjSh, 0, 0, renderW, renderH);
     ctx.restore();
     return;
   }
