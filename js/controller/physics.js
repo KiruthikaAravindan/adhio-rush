@@ -183,6 +183,7 @@ export function nextLevel() {
   gameState.powerupTimer     = 0;
   gameState.caesarNear       = false;
   gameState.treatDropped     = false;
+  if (gameState.lives < 3) gameState.lives = 3;
   gameState.levelStartScore  = gameState.score; // bank for next level's retry cost
   gameState.treatButtonCooldown = 0;
   clearQuiz();
