@@ -122,7 +122,8 @@ const L2_PLATFORMS = [
   // Stepping stones in wide gaps [6-8]
   { x: 2530, y: 360, w: 90,   h: 18 },   // gap [3]→[4] (2440–2650)
   { x: 3240, y: 360, w: 90,   h: 18 },   // gap [4]→[5] first stone
-  { x: 3490, y: 360, w: 90,   h: 18 },   // gap [4]→[5] second stone
+  { x: 3375, y: 360, w: 90,   h: 18 },   // gap [4]→[5] middle stone
+  { x: 3490, y: 360, w: 90,   h: 18 },   // gap [4]→[5] third stone
   // Floating piano-key platforms [9-26]
   { x: 190,  y: 300, w: 90,   h: 18 },
   { x: 360,  y: 248, w: 100,  h: 18 },   // [10] ← prize box host qi:5
@@ -200,11 +201,11 @@ const L2_ENEMY_DEFS = [
 
 // Prize boxes: [platformIdx, type] — quiz(gold), powerup(blue), danger(red)
 const L2_BOX_DEFS = [
-  [10, 'quiz'],
-  [13, 'powerup'],
-  [17, 'danger'],
-  [20, 'quiz'],
-  [25, 'powerup'],
+  [11, 'quiz'],
+  [14, 'powerup'],
+  [18, 'danger'],
+  [21, 'quiz'],
+  [26, 'powerup'],
 ];
 
 // ── Mutable exports (populated by initLevel) ──────────────────────────────────
