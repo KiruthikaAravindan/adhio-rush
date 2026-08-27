@@ -324,7 +324,7 @@ export function update(dt) {
       SFX.stomp();
       burst(pg.x + pg.w / 2, pg.y + pg.h / 2, pg.isDanger ? '#ff5533' : '#aaaacc');
       floatText(pg.x + pg.w / 2, pg.y, '+500', '#FFD700');
-    } else if (player.invincible <= 0) {
+    } else if (player.invincible <= 0 && player.shieldTimer <= 0) {
       // Only hurt player when inside the tighter inner hitbox (avoids edge grazes)
       const pgHit = { x: pg.x + pg.w * 0.2, y: pg.y + pg.h * 0.2, w: pg.w * 0.6, h: pg.h * 0.6 };
       if (!overlap(ph, pgHit)) continue;
@@ -365,7 +365,7 @@ export function update(dt) {
       checkKillScore(e.x + e.w / 2, e.y);
       SFX.stomp();
       burst(e.x + e.w / 2, e.y + e.h / 2, '#8B4513');
-    } else if (player.invincible <= 0 && overlap(ph, e)) {
+    } else if (player.invincible <= 0 && player.shieldTimer <= 0 && overlap(ph, e)) {
       player.invincible = 100;
       gameState.lives--;
       SFX.hit();
@@ -411,18 +411,18 @@ export function update(dt) {
       gameState.caesarNear = false;
     }
 
-    // Pet (L2-3: once per level — basic mode, ground only)
+    // Pet (L2-3: once per level — grants player immunity)
     if (gameState.caesarNear && consumePet()) {
       caesar.curled     = false;
       caesar.met        = true;
       caesar.roaming    = true;
-      caesar.catchTimer = 600;
       caesar.enhanced   = false;
       caesar.sleeping   = false;
       caesar.petTimer   = 90;
+      player.shieldTimer = 360; // ~6 seconds of pigeon/enemy immunity
       gameState.caesarEverMet = true;
       SFX.prize();
-      floatText(caesar.x + caesar.w / 2, caesar.y - 12, 'PAT PAT! ♥', '#FFD700');
+      floatText(caesar.x + caesar.w / 2, caesar.y - 12, '🛡 SHIELDED!', '#FFD700');
       burst(caesar.x + caesar.w / 2, caesar.y, '#FFD700', 8);
       burst(caesar.x + caesar.w / 2, caesar.y, '#ff9900', 5);
     }
@@ -448,59 +448,103 @@ export function update(dt) {
 
     // Platform resolution
     caesar.onGround = false;
+    caesar.onElevated = false;
     for (const p of platforms) {
       if (caesar.x + caesar.w <= p.x || caesar.x >= p.x + p.w) continue;
-      if (caesar.vy >= 0 && caesar.y + caesar.h > p.y && caesar.y + caesar.h < p.y + p.h + 15) {
+      if (caesar.vy >= 0 && caesar.y + caesar.h >= p.y && caesar.y + caesar.h < p.y + p.h + 15) {
         caesar.y = p.y - caesar.h;
         caesar.vy = 0;
         caesar.onGround = true;
+        if (p.h <= 25) caesar.onElevated = true;
       }
     }
     if (caesar.y >= 368) { caesar.y = 368; caesar.vy = 0; caesar.onGround = true; }
 
     // Roaming follow (L4+)
     if (caesar.roaming) {
-      if (Math.abs(player.vx) < 0.3 && player.onGround) {
-        caesar.idleTimer = Math.min(caesar.idleTimer + dt, 200);
+      if (Math.abs(caesar.vx) < 0.5 && caesar.onGround) {
+        caesar.idleTimer = Math.min(caesar.idleTimer + dt, 720);
       } else {
-        caesar.idleTimer = Math.max(caesar.idleTimer - dt * 2, 0);
+        caesar.idleTimer = 0;
+        caesar.lyingPose = false;
+        caesar.sitPose   = false;
+        caesar.sleeping  = false;
       }
-      if (caesar.idleTimer >= 160 && !caesar.sitPose) caesar.sitPose = true;
-      if (caesar.idleTimer < 80  &&  caesar.sitPose)  caesar.sitPose = false;
-      // Jump up to player's platform (always, not just in enhanced mode)
+      if (caesar.idleTimer >= 600 && !caesar.lyingPose) caesar.lyingPose = true;
+      if (caesar.idleTimer < 480 &&  caesar.lyingPose)  caesar.lyingPose = false;
+      if (caesar.idleTimer >= 300 && !caesar.sitPose)   caesar.sitPose = true;
+      if (caesar.idleTimer < 200 &&  caesar.sitPose)    caesar.sitPose = false;
+      // Jump up to player's platform — only re-evaluate if player has moved since last decision
       if (caesar.jumpCooldown > 0) caesar.jumpCooldown -= dt;
       if (caesar.onGround && player.y < caesar.y - 25 && caesar.jumpCooldown <= 0) {
-        const pNear = platforms.find(p =>
-          p.h <= 25 &&
-          Math.abs(p.y - caesar.h - player.y) < 22 &&
-          p.x < caesar.x + 90 && p.x + p.w > caesar.x - 50
-        );
-        if (pNear) {
-          caesar.vy = -9; caesar.onGround = false; caesar.jumpCooldown = 90;
-        } else {
-          // No reachable platform found — suppress re-attempts for a moment
+        const playerMoved = caesar.jumpDecisionX === null ||
+          Math.abs(player.x - caesar.jumpDecisionX) > 80 ||
+          Math.abs(player.y - caesar.jumpDecisionY) > 40;
+        if (!playerMoved && caesar.onElevated) {
+          // Already on a tile, player hasn't moved — hold position
           caesar.jumpCooldown = 60;
+        } else if (playerMoved) {
+          caesar.jumpDecisionX = player.x;
+          caesar.jumpDecisionY = player.y;
+          const pNear = platforms.find(p =>
+            p.h <= 25 &&
+            p.w >= caesar.w * 0.7 &&  // wide enough to land on
+            Math.abs(p.y - caesar.h - player.y) < 22 &&
+            p.x < caesar.x + 90 && p.x + p.w > caesar.x - 50
+          );
+          if (pNear) {
+            caesar.vy = -9; caesar.onGround = false; caesar.jumpCooldown = 150;
+          } else {
+            caesar.jumpCooldown = 90;
+          }
+        } else {
+          caesar.jumpCooldown = 45;
         }
       }
-      // Pit detection — jump over gaps regardless of enhanced state
-      if (caesar.onGround && Math.abs(caesar.vx) > 0.3) {
+      // Protection mode: lead ahead of player; otherwise follow behind
+      const targetX = (caesar.enhanced && caesar.catchTimer > 0)
+        ? player.facing === 1
+          ? player.x + player.w + 20
+          : player.x - caesar.w - 20
+        : player.x - 55;
+      const dx = targetX - caesar.x;
+      const absDx = Math.abs(dx);
+      caesar.vx = absDx > 12
+        ? Math.sign(dx) * Math.min(absDx * 0.12, 3.5)
+        : caesar.vx * Math.pow(0.85, dt);
+      // Pit detection — runs after vx is set so stopping/jumping overrides follow logic
+      if (caesar.onGround && !caesar.onElevated && Math.abs(caesar.vx) > 0.3) {
         const dir = caesar.vx > 0 ? 1 : -1;
-        const checkX = dir > 0 ? caesar.x + caesar.w + 24 : caesar.x - 24;
+        const checkX = dir > 0 ? caesar.x + caesar.w + 8 : caesar.x - 8;
         const feetY = caesar.y + caesar.h;
         const hasPlatformAhead = platforms.some(p =>
           checkX >= p.x && checkX <= p.x + p.w &&
           p.y >= feetY - 8 && p.y <= feetY + 30
         );
         if (!hasPlatformAhead && checkX > 0 && checkX < gameState.worldW) {
-          caesar.vy = -10;
-          caesar.onGround = false;
+          const playerOnOtherSide = dir > 0
+            ? player.x > caesar.x + caesar.w
+            : player.x + player.w < caesar.x;
+          if (playerOnOtherSide) {
+            const landing = platforms
+              .filter(p => dir > 0 ? p.x > checkX : p.x + p.w < checkX)
+              .sort((a, b) => dir > 0 ? a.x - b.x : (b.x + b.w) - (a.x + a.w))[0];
+            const jumpVy  = -13;
+            const airtime = (2 * 13) / GRAVITY;
+            let jumpVx = dir * 4;
+            if (landing) {
+              const landX = dir > 0
+                ? landing.x + landing.w * 0.4
+                : landing.x + landing.w * 0.6;
+              const dist = Math.abs(landX - (caesar.x + caesar.w / 2));
+              jumpVx = dir * Math.max(3.5, Math.min(dist / airtime * 1.2, 7));
+            }
+            caesar.vy = jumpVy; caesar.onGround = false; caesar.vx = jumpVx;
+          } else {
+            caesar.vx = 0;
+          }
         }
       }
-      const targetX = player.x - 55;
-      const dx = targetX - caesar.x;
-      caesar.vx = caesar.idleTimer < 130
-        ? Math.sign(dx) * Math.min(Math.abs(dx) * 0.12, 3.5)
-        : caesar.vx * Math.pow(0.85, dt);
       caesar.x += caesar.vx * dt;
       if (Math.abs(caesar.vx) > 0.1) caesar.facing = caesar.vx > 0 ? 1 : -1;
       caesar.x = Math.max(0, Math.min(caesar.x, gameState.worldW - caesar.w));
@@ -517,7 +561,7 @@ export function update(dt) {
       if (gameState.treatButtonCooldown < 0) gameState.treatButtonCooldown = 0;
     }
     if (caesar.catchTimer > 0) {
-      const RANGE = 140;
+      const RANGE = 200;
 
       // Enhanced: jump toward nearby flying pigeons
       if (caesar.enhanced && caesar.onGround) {
@@ -587,6 +631,7 @@ export function update(dt) {
     player.walkFrame = 0;
   }
   if (player.invincible > 0) player.invincible -= dt;
+  if (player.shieldTimer > 0) player.shieldTimer -= dt;
 
   // ── Particles ────────────────────────────────────────────────────────────────
   for (let i = particles.length - 1; i >= 0; i--) {

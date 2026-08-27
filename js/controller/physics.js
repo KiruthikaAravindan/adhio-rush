@@ -59,6 +59,7 @@ export function resetPlayer() {
   player.x = 100; player.y = 360;
   player.vx = 0;  player.vy = 0;
   player.invincible = 0;
+  player.shieldTimer = 0;
   gameState.cameraX = 0;
 }
 
@@ -96,6 +97,10 @@ function applyCaesarForLevel(n) {
     vx:         0,
     walkFrame:  0,
     walkTimer:  0,
+    jumpDecisionX: null,
+    jumpDecisionY: null,
+    onElevated: false,
+    lyingPose: false,
   });
 
   if (n <= 3) {
