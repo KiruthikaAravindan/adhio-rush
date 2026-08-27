@@ -78,6 +78,7 @@ export const player = {
   onGround: false,
   facing: 1,
   invincible: 0,
+  shieldTimer: 0,  // pet-granted immunity — no flicker, golden aura
   walkFrame: 0, walkTimer: 0,
 };
 
@@ -100,9 +101,12 @@ export const caesar = {
   sleeping: false,
   enhanced: false,   // treat mode — jumps for flying pigeons
   scrollSeen: false, // paw-print cue fired once on first scroll-in
-  idleTimer: 0,      // player stillness counter → sit pose
+  idleTimer: 0,      // player stillness counter → sit/lie pose
   sitPose: false,    // sticky sit flag (hysteresis prevents idle-flicker)
+  lyingPose: false,  // lie-down after 10 s idle
   jumpCooldown: 0,   // frames until next platform-jump attempt allowed
+  jumpDecisionX: null, jumpDecisionY: null, // player pos when last jump decision was made
+  onElevated: false, // currently on a floating platform (h<=25)
   walkFrame: 0, walkTimer: 0,
 };
 

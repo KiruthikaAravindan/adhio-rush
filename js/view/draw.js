@@ -398,7 +398,8 @@ export function drawPigeon(pg) {
 }
 
 export function drawPlayer() {
-  if (player.invincible > 0 && Math.floor(player.invincible / 5) % 2 === 0) return;
+  // Flicker only during damage invincibility — shield mode shows golden aura instead
+  if (player.invincible > 0 && player.shieldTimer <= 0 && Math.floor(player.invincible / 5) % 2 === 0) return;
 
   const DW = 96, DH = 64;
   const isAirborne = !player.onGround && !gameState.celebrating;
@@ -409,6 +410,21 @@ export function drawPlayer() {
   // +8 aligns sprite feet with hitbox bottom; +12 corrects jump-frame's left bias in sheet
   const px = player.x - gameState.cameraX + (player.w - dw) / 2 + (isAirborne ? 12 : 0);
   const py = player.y + player.h - dh + bounceY + 8;
+
+  // Golden shield aura — pet-granted immunity
+  if (player.shieldTimer > 0) {
+    const auraX = player.x - gameState.cameraX + player.w / 2;
+    const auraY = player.y + player.h / 2 + bounceY;
+    const pulse  = 0.18 + 0.08 * Math.sin(Date.now() / 180);
+    ctx.save();
+    ctx.globalAlpha = pulse;
+    ctx.strokeStyle = '#FFD700'; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(auraX, auraY, player.w * 0.85, 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = pulse * 0.4;
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(auraX, auraY, player.w * 1.1, 0, Math.PI * 2); ctx.stroke();
+    ctx.globalAlpha = 1; ctx.restore();
+  }
 
   if (media.playerImage) {
     // Speed streaks — drawn behind player when Allegro powerup is active
@@ -560,25 +576,28 @@ export function drawCaesar() {
     } else if (caesar.petTimer > 0) {
       col=5; row=1;
     } else if (!caesar.onGround) {
-      col=4; row=0;
+      col = caesar.vy < 0 ? 4 : 5; row=0;  // leapA rising, leapB falling
     } else if (caesar.enhanced && caesar.catchTimer > 0) {
       col=6; row=0;
-    } else if (Math.abs(caesar.vx) < 0.5) {
-      col = caesar.sitPose ? 0 : 1; row=0;
+    } else if (Math.abs(caesar.vx) < 1.5) {
+      if (caesar.lyingPose)      { col=1; row=1; }  // lying — idle 10 s
+      else if (caesar.sitPose)   { col=0; row=0; }  // sit   — idle 5 s
+      else                       { col=1; row=0; }  // stand
     } else {
       col=2+caesar.walkFrame; row=0;
     }
     // Per-pose clip config (lc/tc/rc/bc in debug render space: rW=64, rH=natural)
     const POSE_CLIPS = {
-      '0,0': {lc:4,   tc:44, rc:0, bc:8,  topPad:0},
-      '1,0': {lc:4,   tc:46, rc:0, bc:8,  topPad:0},
-      '2,0': {lc:1,   tc:46, rc:0, bc:8,  topPad:0},
-      '3,0': {lc:0,   tc:48, rc:0, bc:8,  topPad:0},
-      '4,0': {lc:0,   tc:48, rc:0, bc:8,  topPad:0},
-      '6,0': {lc:0,   tc:48, rc:4, bc:8,  topPad:0},
-      '2,1': {lc:1,   tc:0,  rc:0, bc:60, topPad:0},
-      '1,1': {lc:2.5, tc:0,  rc:0, bc:60, topPad:0},
-      '5,1': {lc:0,   tc:-2, rc:4, bc:60, topPad:8},
+      '0,0': {lc:4,   tc:44, rc:0, bc:10.5, topPad:0},
+      '1,0': {lc:4,   tc:46, rc:0, bc:10.5, topPad:0},
+      '2,0': {lc:1,   tc:46, rc:0, bc:10.5, topPad:0},
+      '3,0': {lc:0,   tc:48, rc:0, bc:10.5, topPad:0},
+      '4,0': {lc:0,   tc:48, rc:1, bc:10.5, topPad:0},
+      '5,0': {lc:0,   tc:48, rc:1, bc:10.5, topPad:0},
+      '6,0': {lc:0,   tc:48, rc:4, bc:10.5, topPad:0},
+      '2,1': {lc:1,   tc:0,  rc:0, bc:62.5, topPad:0},
+      '1,1': {lc:2.5, tc:0,  rc:0, bc:65,   topPad:0},
+      '5,1': {lc:0,   tc:-2, rc:4, bc:62.5, topPad:8},
     };
     const pc = POSE_CLIPS[`${col},${row}`] || {lc:0, tc:0, rc:0, bc:0, topPad:0};
     const sw = Math.floor(CW) - 10, sh = Math.floor(CH) - 10;
@@ -649,7 +668,7 @@ export function drawCaesar() {
   }
 
   // ── Normal / sit / active pose ──
-  const isSitting = caesar.roaming && caesar.idleTimer > 130 && caesar.catchTimer <= 0;
+  const isSitting = caesar.roaming && caesar.idleTimer > 300 && caesar.catchTimer <= 0;
 
   ctx.save();
   ctx.translate(cx + (flip ? w : 0), baseY);
@@ -778,7 +797,7 @@ export function drawCaesar() {
     ctx.globalAlpha = pct * 0.22;
     ctx.strokeStyle = caesar.enhanced ? '#ff9900' : '#ffcc44';
     ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(cx + w/2, baseY + h/2, 140, 0, Math.PI*2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx + w/2, baseY + h/2, 200, 0, Math.PI*2); ctx.stroke();
     ctx.globalAlpha = 1; ctx.restore();
   }
 }

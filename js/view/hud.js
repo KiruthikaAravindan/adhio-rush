@@ -1,7 +1,8 @@
 import { ctx } from '../canvas.js';
 import { CANVAS_W, CANVAS_H } from '../constants.js';
-import { gameState, caesar } from '../model/state.js';
+import { gameState, player, caesar } from '../model/state.js';
 import { coins } from '../model/level.js';
+import { IS_TOUCH } from '../controller/input.js';
 
 export function syncUI() {
   const score = gameState.score;
@@ -58,7 +59,32 @@ export function drawCaesarHud() {
   if (!caesar.active || gameState.quizActive || gameState.levelComplete ||
       gameState.gameOver || gameState.gameWon || gameState.celebrating) return;
 
-  // Mutually exclusive: pet requires !met, treat requires met/roaming
+  const cx = CANVAS_W / 2;
+  const y  = CANVAS_H - 24;
+
+  // Shield immunity indicator — shown while pet protection is active
+  if (player.shieldTimer > 0) {
+    const pct = Math.max(0, player.shieldTimer / 360);
+    ctx.save();
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.globalAlpha = 0.88;
+    ctx.fillStyle = 'rgba(0,0,0,0.62)';
+    ctx.fillRect(cx - 82, y - 12, 164, 24);
+    ctx.fillStyle = '#FFD700';
+    ctx.font = 'bold 12px Courier New';
+    ctx.fillText('🛡  SHIELDED', cx, y - 1);
+    ctx.fillStyle = 'rgba(255,255,255,0.18)';
+    ctx.fillRect(cx - 58, y + 8, 116, 3);
+    ctx.fillStyle = '#FFD700';
+    ctx.fillRect(cx - 58, y + 8, 116 * pct, 3);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+    return;
+  }
+
+  // Keyboard prompts — desktop only (mobile has its own touch buttons)
+  if (IS_TOUCH) return;
+
   const showPet   = gameState.caesarNear && !caesar.met && !caesar.roaming;
   const showTreat = (caesar.met || caesar.roaming) && gameState.currentLevel >= 4;
   if (!showPet && !showTreat) return;
@@ -66,8 +92,6 @@ export function drawCaesarHud() {
   ctx.save();
   ctx.textAlign    = 'center';
   ctx.textBaseline = 'middle';
-  const cx = CANVAS_W / 2;
-  const y  = CANVAS_H - 24;
 
   if (showPet) {
     ctx.globalAlpha = 0.88;
@@ -88,7 +112,6 @@ export function drawCaesarHud() {
     ctx.font      = 'bold 12px Courier New';
     ctx.fillText(`[F]  Treat 🐟 (${gameState.treats})`, cx, y);
 
-    // Cooldown arc — only visible while button is on cooldown
     if (gameState.treatButtonCooldown > 0) {
       const pct  = 1 - (gameState.treatButtonCooldown / 1200);
       const arcX = cx + 94;
