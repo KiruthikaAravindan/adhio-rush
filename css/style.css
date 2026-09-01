@@ -434,7 +434,7 @@ body.is-touch .mobile-menu-actions { display: flex; }
 
 /* ── Caesar companion touch buttons ── */
 .tbtn.hidden   { display: none !important; }
-.tbtn.disabled { opacity: 0.35; pointer-events: none; }
+.tbtn.disabled { opacity: 0.55; pointer-events: none; }
 
 .tbtn-pet {
   bottom: 132px; right: 94px;
@@ -456,6 +456,13 @@ body.is-touch .mobile-menu-actions { display: flex; }
 
 /* ── Treat cooldown progress ring (mobile) ── */
 .tbtn-treat { position: relative; }
+#treat-btn-count {
+  font-size: 13px;
+  font-weight: bold;
+  color: #ff9900;
+  vertical-align: top;
+  line-height: 1;
+}
 .treat-progress {
   position: absolute;
   inset: -4px;
