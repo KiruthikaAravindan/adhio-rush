@@ -14,7 +14,7 @@ import {
 import { syncUI, drawOverlay, drawLevelComplete, drawQuiz, drawKillBar, drawPowerupHud, drawCaesarHud, drawCaesarIntro } from './view/hud.js';
 
 // ── Touch-device detection ─────────────────────────────────────────────────────
-const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches;
+const IS_TOUCH = ('ontouchstart' in window) || window.matchMedia('(pointer: coarse)').matches;
 if (IS_TOUCH) document.body.classList.add('is-touch');
 
 gameState.speedScale = IS_TOUCH ? 0.62 : 0.88;
@@ -171,6 +171,12 @@ if (btnBuyTreat) {
 }
 
 // ── Dev level-jump buttons ─────────────────────────────────────────────────────
+// Add ?dev to the URL to reveal level-jump buttons (dev use only; hidden from public)
+if (new URLSearchParams(window.location.search).has('dev')) {
+  const devRow = document.getElementById('dev-level-row');
+  if (devRow) devRow.style.display = '';
+}
+
 function syncLevelBtns() {
   [1, 2, 3, 4, 5].forEach(n => {
     const btn = document.getElementById(`btn-level-${n}`);
@@ -208,6 +214,8 @@ function syncCaesarBtns() {
     const visible = caesar.active && n >= 4 && (caesar.met || caesar.roaming);
     btnTreat.classList.toggle('hidden',   !visible);
     btnTreat.classList.toggle('disabled', gameState.treats <= 0 || gameState.treatButtonCooldown > 0);
+    const countEl = document.getElementById('treat-btn-count');
+    if (countEl) countEl.textContent = gameState.treats > 0 ? ` ${gameState.treats}` : '';
 
     // SVG progress ring — fills as cooldown drains (shows when on cooldown)
     const ring = btnTreat.querySelector('.treat-ring');

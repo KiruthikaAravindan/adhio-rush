@@ -33,7 +33,7 @@ document.addEventListener('visibilitychange', () => { if (document.hidden) clear
 // Windows IME intercepts character keys (e.code='', e.keyCode=229). A hidden
 // <input> captures the IME 'input' event and maps e.data → game key.
 // This must NOT run on touch devices: focusing an <input> opens the soft keyboard.
-export const IS_TOUCH = window.matchMedia('(pointer: coarse)').matches;
+export const IS_TOUCH = ('ontouchstart' in window) || window.matchMedia('(pointer: coarse)').matches;
 
 if (!IS_TOUCH) {
   const imeEl = document.createElement('input');
