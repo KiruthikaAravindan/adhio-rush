@@ -6,7 +6,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>Adhio Rush</title>
+  <title>Ihdā'</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
@@ -20,13 +20,16 @@
   <!-- Mobile only: welcome / info modal -->
   <div id="welcome-modal">
     <div class="modal-box">
-      <h1>🎵 Mario Rush</h1>
-      <p>Collect music notes &nbsp;·&nbsp; Stomp enemies</p>
-      <p>Hit <strong style="color:#FFD700">?</strong> boxes for music quizzes!</p>
-      <div class="hint-row">
-        <span>🕹 &nbsp;Drag to move</span>
-        <span>▲ &nbsp;Jump</span>
-        <span>↺ &nbsp;Restart</span>
+      <h1>🎵 Ihdā': Shooo the Cooos! 🐦</h1>
+      <p>Chase the 🎵 notes &nbsp;·&nbsp; Bonk the baddies</p>
+      <p>Smash a <strong style="color:#FFD700">?</strong> box — brace for a music quiz!</p>
+      <div class="hint-row desktop-hints">
+        <span>← → &nbsp;Strut</span>
+        <span>Space &nbsp;Flap!</span>
+      </div>
+      <div class="hint-row touch-hints">
+        <span>◀ ▶ &nbsp;Move</span>
+        <span>▲ &nbsp;Flap!</span>
       </div>
       <button id="btn-start">▶ &nbsp;TAP TO PLAY</button>
     </div>
@@ -48,11 +51,10 @@
 
     <canvas id="gameCanvas" width="800" height="450"></canvas>
 
-    <!-- Mobile only: virtual joystick + jump -->
+    <!-- Mobile only: left/right buttons + jump -->
     <div id="touch-controls">
-      <div id="joystick">
-        <div id="joy-knob"></div>
-      </div>
+      <button class="tbtn tbtn-left" id="btn-left">◀</button>
+      <button class="tbtn tbtn-right" id="btn-right">▶</button>
       <button class="tbtn tbtn-jump" id="btn-jump">▲</button>
       <button class="tbtn tbtn-pet hidden" id="btn-pet">🐾</button>
       <button class="tbtn tbtn-treat hidden" id="btn-treat">

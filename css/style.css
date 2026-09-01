@@ -112,30 +112,17 @@ body.is-touch #touch-controls {
   pointer-events: none;   /* pass-through; individual controls re-enable */
 }
 
-/* Virtual joystick (Option C) — sits ~2/5 up the screen for thumb comfort */
-#joystick {
-  position: absolute;
-  top: 60%;                 /* center at 2/5 up from the bottom */
-  left: 18px;
-  transform: translateY(-50%);
-  width: 118px; height: 118px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.10);
-  border: 2px solid rgba(255,255,255,0.25);
-  pointer-events: all;
-  touch-action: none;
+/* ── Left / Right move buttons ── */
+.tbtn-left {
+  bottom: 20px; left: 14px;
+  width: 80px; height: 80px;
+  font-size: 28px;
 }
-#joy-knob {
-  position: absolute;
-  top: 50%; left: 50%;
-  width: 52px; height: 52px;
-  margin: -26px 0 0 -26px;
-  border-radius: 50%;
-  background: rgba(255,255,255,0.35);
-  border: 2px solid rgba(255,255,255,0.55);
-  transition: background 0.08s;
+.tbtn-right {
+  bottom: 20px; left: 104px;
+  width: 80px; height: 80px;
+  font-size: 28px;
 }
-#joystick.active #joy-knob { background: rgba(174,238,255,0.6); }
 
 .tbtn {
   position: absolute;
@@ -159,7 +146,6 @@ body.is-touch #touch-controls {
   color: rgba(255,255,255,0.45);
   background: rgba(233,69,96,0.22);
   border-color: rgba(233,69,96,0.6);
-  padding-top: 8px; /* ▲ glyph renders visually high; nudge it down */
 }
 .tbtn-jump:active, .tbtn-jump.pressed { background: rgba(233,69,96,0.6); }
 
@@ -227,14 +213,15 @@ body.is-touch #touch-controls {
   text-align: center;
   color: #fff;
   padding: 28px 36px;
-  max-width: 500px;
 }
 .modal-box h1 {
-  font-size: 40px;
+  font-size: 28px;
   color: #ee66ff;
   text-shadow: 0 0 24px rgba(238,102,255,0.5);
   margin-bottom: 14px;
   letter-spacing: 2px;
+  white-space: nowrap;
+  text-align: center;
 }
 .modal-box p {
   font-size: 15px;
@@ -249,6 +236,9 @@ body.is-touch #touch-controls {
   flex-wrap: wrap;
   margin: 20px 0 30px;
 }
+.touch-hints { display: none; }
+body.is-touch .desktop-hints { display: none; }
+body.is-touch .touch-hints { display: flex; }
 .hint-row span {
   font-size: 13px;
   color: #aef;
@@ -435,6 +425,11 @@ body.is-touch .mobile-menu-actions { display: flex; }
 /* ── Caesar companion touch buttons ── */
 .tbtn.hidden   { display: none !important; }
 .tbtn.disabled { opacity: 0.55; pointer-events: none; }
+#btn-treat.disabled {
+  opacity: 0.75;
+  background: rgba(255,120,0,0.28);
+  border-color: rgba(255,120,0,0.65);
+}
 
 .tbtn-pet {
   bottom: 132px; right: 94px;
@@ -446,16 +441,15 @@ body.is-touch .mobile-menu-actions { display: flex; }
 .tbtn-pet:active, .tbtn-pet.pressed { background: rgba(255,215,0,0.45); }
 
 .tbtn-treat {
-  bottom: 132px; right: 18px;
-  width: 68px; height: 68px;
-  font-size: 26px;
+  bottom: 140px; right: 22px;
+  width: 52px; height: 52px;
+  font-size: 20px;
   background: rgba(255,120,0,0.15);
   border-color: rgba(255,120,0,0.50);
 }
 .tbtn-treat:active, .tbtn-treat.pressed { background: rgba(255,120,0,0.45); }
 
 /* ── Treat cooldown progress ring (mobile) ── */
-.tbtn-treat { position: relative; }
 #treat-btn-count {
   font-size: 13px;
   font-weight: bold;

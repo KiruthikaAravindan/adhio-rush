@@ -187,3 +187,25 @@ export function setBgMusicMuted(muted) {
   bgGain.gain.cancelScheduledValues(audioCtx.currentTime);
   bgGain.gain.setTargetAtTime(shouldSilence ? 0 : 1, audioCtx.currentTime, 0.15);
 }
+
+// Suspend audio when window loses focus; resume when it regains it
+let _suspendedByBlur = false;
+
+function onBlur() {
+  if (audioCtx.state === 'running') {
+    _suspendedByBlur = true;
+    audioCtx.suspend();
+  }
+}
+
+export function resumeAfterPause() {
+  if (_suspendedByBlur) {
+    _suspendedByBlur = false;
+    audioCtx.resume();
+  }
+}
+
+window.addEventListener('blur', onBlur);
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) onBlur();
+});
