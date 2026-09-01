@@ -187,9 +187,6 @@ export function nextLevel() {
   gameState.levelStartScore  = gameState.score; // bank for next level's retry cost
   gameState.treatButtonCooldown = 0;
   clearQuiz();
-  initLevel(next);
-  applyCaesarForLevel(next);
-  resetPlayer();
 }
 
 export function retryLevel() {
@@ -254,7 +251,7 @@ export function jumpToLevel(n) {
   gameState.speedMult        = 1;
   gameState.powerupActive    = null;
   gameState.powerupTimer     = 0;
-  gameState.treats           = 0;
+  gameState.treats           = n >= 4 ? 1 : 0;
   gameState.caesarNear       = false;
   gameState.treatDropped     = false;
   gameState.levelStartScore  = 0;

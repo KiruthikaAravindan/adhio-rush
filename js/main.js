@@ -1,6 +1,6 @@
 import { canvas, ctx } from './canvas.js';
 import { CANVAS_W, CANVAS_H } from './constants.js';
-import { resumeAudio, startBgMusic, setBgMusicMuted, SFX } from './audio.js';
+import { resumeAudio, startBgMusic, setBgMusicMuted, SFX, resumeAfterPause } from './audio.js';
 import { settings, saveSettings } from './model/settings.js';
 import { gameState, caesar, media } from './model/state.js';
 import { platforms, coins, enemies, prizeBoxes, pigeons, boxItems } from './model/level.js';
@@ -211,7 +211,7 @@ function syncCaesarBtns() {
     btnPet.classList.toggle('disabled', !gameState.caesarNear);
   }
   if (btnTreat) {
-    const visible = caesar.active && n >= 4 && (caesar.met || caesar.roaming);
+    const visible = n >= 4;
     btnTreat.classList.toggle('hidden',   !visible);
     btnTreat.classList.toggle('disabled', gameState.treats <= 0 || gameState.treatButtonCooldown > 0);
     const countEl = document.getElementById('treat-btn-count');
@@ -333,6 +333,7 @@ if (btnActionSecondary) {
 
 // ── Quiz: canvas click/tap to select answers ───────────────────────────────────
 canvas.addEventListener('pointerdown', e => {
+  if (gameState.paused) return;
   if (!gameState.quizActive) return;
   e.stopPropagation();
 
@@ -363,6 +364,54 @@ canvas.addEventListener('pointerdown', e => {
   }
 });
 
+// ── Pause on focus loss ───────────────────────────────────────────────────────
+function isActiveGameplay() {
+  return welcomeModal.classList.contains('hidden') &&
+         !gameState.gameOver && !gameState.gameWon && !gameState.levelComplete;
+}
+
+function drawPauseOverlay() {
+  ctx.save();
+  ctx.fillStyle = 'rgba(5, 0, 20, 0.78)';
+  ctx.fillRect(0, 0, CANVAS_W, CANVAS_H);
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.font = '52px serif';
+  ctx.fillText('🐦', CANVAS_W / 2, CANVAS_H / 2 - 68);
+  ctx.font = "bold 40px 'Courier New', monospace";
+  ctx.fillStyle = '#ee66ff';
+  ctx.shadowColor = 'rgba(238,102,255,0.55)';
+  ctx.shadowBlur = 20;
+  ctx.fillText('PAUSED', CANVAS_W / 2, CANVAS_H / 2 - 8);
+  ctx.font = "15px 'Courier New', monospace";
+  ctx.fillStyle = '#aef';
+  ctx.shadowBlur = 0;
+  ctx.fillText('click or press any key to resume', CANVAS_W / 2, CANVAS_H / 2 + 38);
+  ctx.restore();
+}
+
+function unpause() {
+  if (!gameState.paused) return;
+  gameState.paused = false;
+  _lastTime = 0;
+  resumeAfterPause();
+}
+
+function onWindowBlur() {
+  if (isActiveGameplay()) gameState.paused = true;
+}
+
+window.addEventListener('blur', onWindowBlur);
+document.addEventListener('visibilitychange', () => { if (document.hidden) onWindowBlur(); });
+
+window.addEventListener('keydown', e => {
+  if (gameState.paused) { e.preventDefault(); unpause(); }
+}, { capture: true });
+
+window.addEventListener('pointerdown', () => {
+  if (gameState.paused) unpause();
+});
+
 // ── Game loop ──────────────────────────────────────────────────────────────────
 let _lastTime = 0;
 
@@ -370,9 +419,9 @@ function loop() {
   const now = performance.now();
   const dt  = _lastTime ? Math.min((now - _lastTime) / (1000 / 60), 3) : 1;
   _lastTime = now;
-  update(dt);
+  if (!gameState.paused) update(dt);
 
-  const muteMusic = gameState.quizActive || gameState.showCaesarIntro ||
+  const muteMusic = gameState.paused || gameState.quizActive || gameState.showCaesarIntro ||
                     gameState.gameOver   || gameState.gameWon || gameState.levelComplete;
   setBgMusicMuted(muteMusic);
 
@@ -397,6 +446,7 @@ function loop() {
   if (gameState.showCaesarIntro)               drawCaesarIntro();
   if (gameState.levelComplete)                 drawLevelComplete();
   if (gameState.gameOver || gameState.gameWon) drawOverlay();
+  if (gameState.paused) drawPauseOverlay();
   syncActionBtn();
   requestAnimationFrame(loop);
 }

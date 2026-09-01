@@ -92,6 +92,8 @@ function bindBtn(id, code) {
   el.addEventListener('pointercancel', release);
 }
 bindBtn('btn-jump',  'Space');
+bindBtn('btn-left',  'ArrowLeft');
+bindBtn('btn-right', 'ArrowRight');
 bindBtn('btn-pet',   'KeyE');
 bindBtn('btn-treat', 'KeyF');
 

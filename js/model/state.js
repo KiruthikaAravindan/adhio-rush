@@ -19,6 +19,7 @@ export const gameState = {
   cameraX: 0,
   restartHeld: false,
   jumpDown: false,
+  paused: false,
 
   bestScore: loadBest(),
   newBest: false,
